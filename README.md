@@ -61,17 +61,31 @@ For convenience, the pattern sets work well with `lodgatewayclient.LODGatewayCli
 
 ```
 >>> from lodgatewayclient import LODGatewayClient
->>> l = LODGatewayClient("https://staging-data.jpcarchive.org")
+>>> l = LODGatewayClient("https://data.jpcarchive.org")
+
+# set the default for the sparql client:
 >>> archival.set_sparql_client_method(l.sparql)
+
+
 >>> collections = archival.run_pattern("list_collections")
 >>> collections[0]
-{'collection': {'type': 'uri', 'value': 'https://staging-data.jpcarchive.org/component/e3e536ae-84b9-5d80-8eae-97ad774c128e'}}
+{'collection': {'type': 'uri', 'value': 'https://data.jpcarchive.org/component/e3e536ae-84b9-5d80-8eae-97ad774c128e'}}
+```
+
+Some patterns require parameters. This is seen in the `.keyword_parameters` attribute for a given pattern, and is listed in the browse view for a pattern set.
+
+```
 >>> archival.run_pattern("get_images_for_a_refid")
 Traceback (most recent call last):
   File "<stdin>", line 1, in <module>
   File "/Users/bosteen/Workspace/getty-jsonld-sparql-patterns/src/gettysparqlpatterns/ENV/lib/python3.10/site-packages/gettysparqlpatterns/registry.py", line 172, in run_pattern
     raise RequiredParametersMissingError(
 gettysparqlpatterns.registry.RequiredParametersMissingError: Query requires the following parameters: ['refid']
+```
+
+Parameters can be passed in as keyword parameters to the `run_pattern` method:
+
+```
 >>> images = archival.run_pattern("get_images_for_a_refid", refid="3bff80eb8006ef6630a072ae102fe727")
 >>> images[0]
 {'image': {'type': 'uri', 'value': 'https://staging-data.jpcarchive.org/media/image/dams:JPC-3bff80eb8006ef6630a072ae102fe727_0006_001'}}
@@ -81,6 +95,11 @@ gettysparqlpatterns.registry.RequiredParametersMissingError: Query requires the 
 ['count_informationobjects', 'count_groups', 'count_persons', 'count_hmos', 'count_visualitems']
 >>> lacounts.run_pattern("count_groups")
 '338'
+```
+
+Alternate SPARQL endpoints can be passed as part of the `run_pattern` method call as well:
+
+```
 >>> getty = LODGatewayClient("https://data.getty.edu/research/collections")
 >>> lacounts.run_pattern("count_groups", getty.sparql)
 '982'
