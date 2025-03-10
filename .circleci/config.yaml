@@ -1,0 +1,43 @@
+lint:
+    executor: python-executor
+    steps:
+      - checkout
+      - run:
+          name: Install dependencies
+          command: |
+            python -m venv venv
+            . venv/bin/activate
+            pip install --upgrade pip
+            pip install -r requirements.txt
+      - run:
+          name: Run black
+          command: |
+            . venv/bin/activate
+            black --check .
+
+  test:
+    executor: python-executor
+    steps:
+      - checkout
+      - run:
+          name: Install dependencies
+          command: |
+            python -m venv venv
+            . venv/bin/activate
+            pip install --upgrade pip
+            pip install -r requirements.txt
+            pip install .
+      - run:
+          name: Run pytest
+          command: |
+            . venv/bin/activate
+            pytest
+
+workflows:
+  version: 2
+  lint_and_test:
+    jobs:
+      - lint:
+          context: GETTY
+      - test:
+          context: GETTY
