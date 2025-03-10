@@ -6,20 +6,17 @@ from typing import Literal, Callable
 # Workaround for the Template.get_identifiers only in py3.11+
 import re
 
+from .utilities import (
+    NoSuchPatternError,
+    RequiredParametersMissingError,
+    NoSPARQLEndpointSetError,
+    SPARQLResponseObj,
+    SPARQLURI,
+    SPARQLLiteral,
+)
+
 
 logger = logging.getLogger(__name__)
-
-
-class SPARQLPatternsError(ValueError):
-    pass
-
-
-class NoSuchPatternError(SPARQLPatternsError):
-    pass
-
-
-class RequiredParametersMissingError(SPARQLPatternsError):
-    pass
 
 
 class SPARQLRegistry:
@@ -53,6 +50,7 @@ class BasePattern:
         sparql_pattern: str,
         stype: Literal["ask", "select", "construct", "count"],
         description: str | None = None,
+        **kwargs,
     ):
         self.name = name
         self.description = (
@@ -150,6 +148,7 @@ class PatternSet:
                 "description": pattern.description,
                 "sparql_pattern": pattern.sparql_pattern.template,
                 "stype": pattern.stype,
+                "keyword_parameters": pattern.keyword_parameters,
             }
             for name, pattern in self._patterns.items()
         ]
@@ -177,6 +176,9 @@ class PatternSet:
         if not sparql_client_method:
             sparql_client_method = self.sparql_client_method
 
+        if sparql_client_method is None:
+            raise NoSPARQLEndpointSetError()
+
         query = self.format_pattern(name, **kwargs)
         resp = sparql_client_method(query)
         match resp:
@@ -195,8 +197,31 @@ class PatternSet:
                                 }
                             }
                         ]:
-                            return count
+                            return int(count)
 
-                return results
+                # Process the response as a standard SELECT response
+                parsed_results = []
+                for resultrow in results:
+                    row = {}
+                    for k, v in resultrow.items():
+                        match v:
+                            case {
+                                "datatype": "http://www.w3.org/2001/XMLSchema#integer",
+                                "type": "literal",
+                                "value": value,
+                            }:
+                                row[k] = int(value)
+                            case {"type": "uri", "value": value}:
+                                row[k] = SPARQLURI(value)
+                            case {"type": "literal", "value": value, **other}:
+                                datatype = other.get("datatype")
+                                row[k] = SPARQLLiteral(value, datatype)
+                            case {"type": othertype, "value": value, **other}:
+                                datatype = other.get("datatype")
+                                row[k] = SPARQLResponseObj(
+                                    value, othertype, datatype=datatype
+                                )
+                    parsed_results.append(row)
+                return parsed_results
             case other:
                 return other

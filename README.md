@@ -35,9 +35,32 @@ Each top-level pattern set holds one or more patterns, and these can be listed o
 >>> archival.browse_patterns("ask")
 [('inf_hmo_not_ready', 'Given a Linked Art HumanMadeObject or a InformationObject URI, run an ASK query to see if it is for preview only and not intended for production.', <gettysparqlpatterns.registry.BasePattern object at 0x109759240>, ['URI']), ('inf_not_ready', 'Given a Linked Art InformationObject URI run an ASK query to see if it is for preview only and not intended for production.', <gettysparqlpatterns.registry.BasePattern object at 0x109758520>, ['URI']), ('hmo_not_ready', 'Given a Linked Art HumanMadeObject URI run an ASK query to see if it is for preview only and not intended for production.', <gettysparqlpatterns.registry.BasePattern object at 0x10975bd00>, ['URI']), ('hmo_has_component', '', <gettysparqlpatterns.registry.BasePattern object at 0x10975bb80>, ['URI'])]
 
+```
 
+The list_patterns method can be filtered in the same manner:
+```
 >>> archival.list_patterns("select")
 ['hmo_list_components', 'list_collections', 'get_images_for_a_refid']
+```
+
+More information can be found for both the pattern set and also each SPARQL pattern, if the author has added additional information:
+
+```
+>>> archival.list_patterns()
+['inf_hmo_not_ready', 'inf_not_ready', 'hmo_not_ready', 'hmo_has_component', 'hmo_list_components', 'list_collections', 'get_images_for_a_refid']
+
+>>> archival.description
+'A set of SPARQL patterns for getting specific bits of information from Getty-published\n    archival metadata held in Linked Data.'
+
+# and for an individual pattern:
+>>> infhmonotready = archival.get_pattern("inf_hmo_not_ready")
+>>> infhmonotready.description
+'Given a Linked Art HumanMadeObject or a InformationObject URI, run an ASK query to see if it is for preview only and not intended for production.'
+
+# The 'stype' is the type of SPARQL query it corresponds to: ask, select, construct and count.
+>>> infhmonotready.stype
+'ask'
+>>>
 ```
 
 To run these queries, the pattern set can return a formatted SPARQL query for a given pattern and parameters if required:
@@ -57,7 +80,7 @@ SELECT ?image WHERE {
 >>>
 ```
 
-For convenience, the pattern sets work well with `lodgatewayclient.LODGatewayClient`s:
+For convenience, the pattern sets work well with `lodgatewayclient.LODGatewayClient` instances:
 
 ```
 >>> from lodgatewayclient import LODGatewayClient
@@ -66,10 +89,17 @@ For convenience, the pattern sets work well with `lodgatewayclient.LODGatewayCli
 # set the default for the sparql client:
 >>> archival.set_sparql_client_method(l.sparql)
 
+# NB if no SPARQL function is set, run_pattern() will raise a NoSPARQLEndpointSetError
 
 >>> collections = archival.run_pattern("list_collections")
 >>> collections[0]
-{'collection': {'type': 'uri', 'value': 'https://data.jpcarchive.org/component/e3e536ae-84b9-5d80-8eae-97ad774c128e'}}
+{'collection': SPARQLURI(URI <'https://data.getty.edu/research/collections/component/c7703138-d4a4-5e24-b8a2-117f0882cf8c'>)}
+
+>>> raw_sparql_response = l.sparql(archival.get_pattern("list_collections"))
+>>> raw_sparql_response
+
+
+# See later about SPARQLURI and SPARQLLiteral in the responses
 ```
 
 Some patterns require parameters. This is seen in the `.keyword_parameters` attribute for a given pattern, and is listed in the browse view for a pattern set.
@@ -83,18 +113,85 @@ Traceback (most recent call last):
 gettysparqlpatterns.registry.RequiredParametersMissingError: Query requires the following parameters: ['refid']
 ```
 
-Parameters can be passed in as keyword parameters to the `run_pattern` method:
+Parameters can be passed in as keyword parameters to the `run_pattern` method. This method will attempt to render the base SPARQL response into a simpler form, depending on the type of pattern.
 
 ```
 >>> images = archival.run_pattern("get_images_for_a_refid", refid="3bff80eb8006ef6630a072ae102fe727")
 >>> images[0]
-{'image': {'type': 'uri', 'value': 'https://staging-data.jpcarchive.org/media/image/dams:JPC-3bff80eb8006ef6630a072ae102fe727_0006_001'}}
->>> lacounts = SPARQLRegistry.get_patternsets("la_counts")
->>> lacounts.set_sparql_client_method(l.sparql)
->>> lacounts.list_patterns()
-['count_informationobjects', 'count_groups', 'count_persons', 'count_hmos', 'count_visualitems']
+{'image': SPARQLURI(URI <'https://data.jpcarchive.org/media/image/dams:JPC-3bff80eb8006ef6630a072ae102fe727_0001_001'>)}
+>>> print(f"First image URI found from the responses: {images[0]['image']}")
+First image URI found from the responses: https://data.jpcarchive.org/media/image/dams:JPC-3bff80eb8006ef6630a072ae102fe727_0001_001
+```
+
+### `run_pattern` SPARQL query type responses
+
+While the pattern set can be used to format SPARQL queries, the `run_pattern` method interprets the SPARQL response based on the type of query.
+
+- `ask` will return a (python) boolean response, rather than a raw SPARQL JSON body.
+- `select` will return a list of results, each variable will have the standard SPARQL 1.1 response format
+- `count` is a specific version of a select query, that expects a `count` variable in the response. This will return the numeric value of this variable
+- `construct` will return the SPARQL 1.1 response verbatim as a string, rather than attempt to parse it into an RDF object of some kind. 
+
+#### ASK
+```
+# ASK
+>>> archival.get_pattern("hmo_not_ready").stype
+'ask'
+>>> archival.get_pattern("hmo_not_ready").keyword_parameters
+['URI']
+>>> archival.run_pattern("hmo_not_ready", URI="https://data.getty.edu/ ....")
+False
+```
+
+#### SELECT (SPARQLURI and SPARQLLiteral)
+
+`SPARQLURI` and `SPARQLLiteral` are subclasses of the class `str` and for all intents and purposes can be used as such, including comparisons, assignments, and being turned into JSON (eg `json.dumps(images)` works as expected.)
+
+However, these are typed as URI or Literal instead of plain `str` and can be distinguished either by querying their `type`, or by looking at the attribute `sparql_type` which will be either 'URI' or 'Literal'.
+
+All values with a 'datatype' of 'http://www.w3.org/2001/XMLSchema#integer' will be cast as an python `int`. Other datatyped Literals will be cast as `SPARQLLiteral`, with the datatype present as a `.datatype` attribute. (No attempt to reduce a datetime to a python `datetime.datetime` object is made at this point.)
+
+```
+# SELECT
+>>> from lodgatewayclient import LODGatewayClient
+>>> getty = LODGatewayClient("https://data.getty.edu/research/collections")
+>>> from gettysparqlpatterns import *
+>>> archival = SPARQLRegistry.get_patternsets("archival")
+>>> archival.set_sparql_client_method(getty.sparql)
+
+>>> collections = archival.run_pattern("list_collections")
+>>> collections[0]
+{'collection': SPARQLURI(URI <'https://data.getty.edu/research/collections/component/c7703138-d4a4-5e24-b8a2-117f0882cf8c'>)}
+
+>>> collections[0]['collection'].sparql_type
+'URI'
+
+# export the first three collections (only three for brevity's sake)
+>>> import json
+>>> print(json.dumps(collections[:3], indent=2))
+[
+  {
+    "collection": "https://data.getty.edu/research/collections/component/c7703138-d4a4-5e24-b8a2-117f0882cf8c"
+  },
+  {
+    "collection": "https://data.getty.edu/research/collections/component/786224ef-ae38-56cd-915f-f7fdba807dbb"
+  },
+  {
+    "collection": "https://data.getty.edu/research/collections/component/d3f8a16e-817c-5d5f-9519-faff3f6b799a"
+  }
+]
+```
+
+#### COUNT
+
+The 'count' pattern is a convenient form of the SELECT query, which looks for a specifically named 'count' variable in the responses and returns only that numerical value:
+
+```
+# COUNT
+>>> lacounts.get_pattern("count_groups").stype
+'count'
 >>> lacounts.run_pattern("count_groups")
-'338'
+338
 ```
 
 Alternate SPARQL endpoints can be passed as part of the `run_pattern` method call as well:
@@ -102,6 +199,69 @@ Alternate SPARQL endpoints can be passed as part of the `run_pattern` method cal
 ```
 >>> getty = LODGatewayClient("https://data.getty.edu/research/collections")
 >>> lacounts.run_pattern("count_groups", getty.sparql)
-'982'
+982
+>>>
+```
+
+### Create PatternSets programmatically
+
+The classes in this module can be used programmatically to create pattern sets, with export and import options.
+
+```
+# Get a suitable SPARQL endpoint for testing:
+>>> from lodgatewayclient import LODGatewayClient
+>>> getty = LODGatewayClient("https://data.getty.edu/research/collections")
+
+
+>>> from gettysparqlpatterns import *
+>>> test = PatternSet("test patternset")
+>>> test.set_sparql_client_method(getty.sparql)
+
+# add a pattern called "Find_a_time_datatype", with an stype of 'select'. Note that the 
+# following omits the optional 'description' parameter which can be used to add more documentation
+>>> test.add_pattern("Find_a_datatype", """PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+...
+... SELECT ?graph ?subject ?predicate ?object
+... WHERE {
+...   GRAPH ?graph {
+...     ?subject ?predicate ?object .
+...     FILTER(datatype(?object) = xsd:dateTime)
+...   }
+... } LIMIT 1""", stype="select")
+
+# Test run it:
+>>> test.run_pattern("Find_a_time_datatype")
+[{'subject': SPARQLURI(URI <'https://data.getty.edu/research/collections/component/d3f8a16e-817c-5d5f-9519-faff3f6b799a/creation'>), 'predicate': SPARQLURI(URI <'http://www.cidoc-crm.org/cidoc-crm/P82a_begin_of_the_begin'>), 'object': SPARQLLiteral("'2012-01-01T00:00:00.000Z'"), 'graph': SPARQLURI(URI <'https://data.getty.edu/research/collections/component/d3f8a16e-817c-5d5f-9519-faff3f6b799a'>)}]
+
+
+>>> quad = test.run_pattern("Find_a_datatype")[0]
+>>> quad['object'].datatype
+'http://www.w3.org/2001/XMLSchema#dateTime'
+>>> quad['object'].sparql_type
+'Literal'
+```
+
+#### Exporting and Importing sets of SPARQL patterns
+
+The patterns can be exported and imported as simple JSON-encodable data, and `PatternSet` instances can hold patterns from multiple sources (however, the patterns have to be named uniquely, or later added patterns will overwrite existing ones).
+
+```
+# Export
+>>> exported = test.export_patterns()
+>>>
+>>> exported
+[{'name': 'Find_a_datatype', 'description': 'No description given', 'sparql_pattern': 'PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT ?graph ?subject ?predicate ?object\nWHERE {\n  GRAPH ?graph {\n    ?subject ?predicate ?object .\n    FILTER(datatype(?object) = xsd:dateTime)\n  }\n} LIMIT 1', 'stype': 'select'}]
+
+# Import
+>>> newtest = PatternSet('new test')
+>>> newtest.import_patterns(exported)
+>>> newtest.list_patterns()
+['Find_a_datatype']
+
+# Import additional patterns without clearing the existing ones:
+>>> lacounts = SPARQLRegistry.get_patternsets("la_counts")
+>>> newtest.import_patterns(lacounts.export_patterns(), clear_before_import=False)
+>>> newtest.list_patterns()
+['Find_a_datatype', 'count_informationobjects', 'count_groups', 'count_persons', 'count_hmos', 'count_visualitems']
 >>>
 ```
