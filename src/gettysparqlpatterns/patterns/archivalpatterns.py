@@ -52,6 +52,19 @@ ASK {
         "stype": "ask",
     },
     {
+        "name": "is_part_of_production",
+        "description": "Tests to see if the given URI is the 'object' of any triple in an InformationObject named graph where the InformationObject is not marked as not ready for production",
+        "sparql_pattern": """PREFIX crm: <http://www.cidoc-crm.org/cidoc-crm/>
+ASK {
+      ?inf a crm:E73_Information_Object .
+      graph ?inf { ?s ?p $URI . }
+      filter NOT EXISTS {
+    ?inf crm:P2_has_type <https://data.getty.edu/local/thesaurus/aspace-finding-aid-status/notreadyforproduction> .
+  }
+}""",
+        "stype": "ask",
+    },
+    {
         "name": "hmo_has_component",
         "description": "",
         "sparql_pattern": """PREFIX crm: <http://www.cidoc-crm.org/cidoc-crm/>
