@@ -84,14 +84,44 @@ SELECT ?inf WHERE {
     },
     {
         "name": "list_collections",
-        "description": "List all the published collections (top-level records)",
+        "description": "List all the published collections (top-level records) with accession numbers",
+        "sparql_pattern": """
+PREFIX crm: <http://www.cidoc-crm.org/cidoc-crm/>
+SELECT ?component ?eadid WHERE {
+  ?component ?idby ?foo .
+  ?foo crm:P2_has_type <https://data.getty.edu/local/thesaurus/ead-id> .
+  ?foo crm:P190_has_symbolic_content ?eadid .
+}""",
+        "stype": "select",
+    },
+    {
+        "name": "list_collections_w_findingaidstatus",
+        "description": "List all the published collections (top-level records) with their accession number, finding aid status, and title. Multiple titles will created multiple rows.",
         "sparql_pattern": """PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-SELECT * WHERE {
-  GRAPH ?collection {
-  ?collection <http://www.cidoc-crm.org/cidoc-crm/P2_has_type> <http://vocab.getty.edu/aat/300375748> .
+PREFIX crm: <http://www.cidoc-crm.org/cidoc-crm/>
+SELECT ?accession ?inf ?findaidclass ?findaidclassname ?title WHERE {
+  ?inf ?idby ?cl .
+  ?inf rdfs:label ?title .
+  ?cl crm:P2_has_type <https://data.getty.edu/local/thesaurus/ead-id> .
+  ?cl crm:P190_has_symbolic_content ?accession .
+  ?inf crm:P94i_was_created_by ?creby .
+  ?creby crm:P2_has_type ?findaidclass .
+  ?findaidclass rdfs:label ?findaidclassname .
+}""",
+        "stype": "select",
+    },
+    {
+        "name": "get_collection_uri_with_accession_number",
+        "description": "Given an accession number (ACCESSION), this query will find the matching component URI for the collection.",
+        "sparql_pattern": """PREFIX crm: <http://www.cidoc-crm.org/cidoc-crm/>
+PREFIX aat: <http://vocab.getty.edu/aat/>
+
+SELECT ?informationobject WHERE { GRAPH ?informationobject {
+    ?inf crm:P190_has_symbolic_content $ACCESSION .
+    ?inf crm:P2_has_type aat:300312355 .
   }
-} LIMIT 1000""",
+}""",
         "stype": "select",
     },
 ]
