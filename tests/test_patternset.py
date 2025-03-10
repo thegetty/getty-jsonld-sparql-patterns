@@ -24,7 +24,7 @@ def test_add_pattern():
     )
     assert "TestPattern" in ps._patterns
     assert ps._patterns["TestPattern"].name == "TestPattern"
-    assert ps._patterns["TestPattern"].sparql_pattern == "SELECT * WHERE {}"
+    assert ps._patterns["TestPattern"].sparql_pattern.template == "SELECT * WHERE {}"
     assert ps._patterns["TestPattern"].stype == "select"
 
 
