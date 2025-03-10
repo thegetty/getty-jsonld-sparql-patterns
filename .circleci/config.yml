@@ -1,4 +1,13 @@
-lint:
+version: 2.1
+
+executors:
+  python-executor:
+    docker:
+      - image: circleci/python:3.10
+    working_directory: ~/repo
+
+jobs:
+  lint:
     executor: python-executor
     steps:
       - checkout
@@ -13,7 +22,7 @@ lint:
           name: Run black
           command: |
             . venv/bin/activate
-            black --check .
+            black --check src/gettysparqlpatterns
 
   test:
     executor: python-executor
