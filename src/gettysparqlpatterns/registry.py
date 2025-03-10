@@ -1,4 +1,5 @@
 import logging
+import requests
 
 from string import Template
 from typing import Literal, Callable
@@ -154,6 +155,18 @@ class PatternSet:
         ]
 
     def import_patterns(self, patterns: list, clear_before_import: bool = True):
+        if _loaded := {p["name"]: BasePattern(**p) for p in patterns if p}:
+            if clear_before_import:
+                self._patterns = _loaded
+            else:
+                self._patterns.update(_loaded)
+
+    def import_patterns_from_url(self, url: str, clear_before_import: bool = True):
+        try:
+            patterns = requests.get(url).json()
+        except requests.exceptions.JSONDecodeError:
+            raise NoSuchPatternError("There are no patterns at that URL")
+
         if _loaded := {p["name"]: BasePattern(**p) for p in patterns if p}:
             if clear_before_import:
                 self._patterns = _loaded
