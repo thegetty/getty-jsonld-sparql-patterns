@@ -245,6 +245,10 @@ The classes in this module can be used programmatically to create pattern sets, 
 
 The patterns can be exported and imported as simple JSON-encodable data, and `PatternSet` instances can hold patterns from multiple sources (however, the patterns have to be named uniquely, or later added patterns will overwrite existing ones).
 
+The creation of new patterns will require some trial and error, so it is expected that a PatternSet would be created in parts, and eventually exported to record the progress made and potentially to include in this module.
+
+NB The reason why the `patterns/archivalpatterns.py` and `patterns/la_counts.py` files are python files and not .json is because JSON does not allow strings to be broken over multiple lines and so, if far less readable than the more formatted python view of the same data. 
+
 ```
 # Export
 >>> exported = test.export_patterns()
