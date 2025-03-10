@@ -24,6 +24,8 @@ class SPARQLResponseObj(str):
         return obj
 
     def __repr__(self):
+        if self.datatype:
+            return f'SPARQLLiteral("{super().__repr__()}", sparql_type={self.type_name!r}, datatype="{self.datatype!r}")'
         return (
             f"SPARQLResponseObj({super().__repr__()}, sparql_type={self.type_name!r})"
         )
@@ -56,4 +58,8 @@ class SPARQLLiteral(str):
         return obj
 
     def __repr__(self):
+        if self.datatype:
+            return (
+                f'SPARQLLiteral("{super().__repr__()}", datatype="{self.datatype!r}")'
+            )
         return f'SPARQLLiteral("{super().__repr__()}")'
