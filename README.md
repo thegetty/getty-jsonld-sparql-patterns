@@ -86,8 +86,13 @@ For convenience, the pattern sets work well with `lodgatewayclient.LODGatewayCli
 >>> from lodgatewayclient import LODGatewayClient
 >>> l = LODGatewayClient("https://data.jpcarchive.org")
 
-# set the default for the sparql client:
+# "use_lodgateway_for_queries" to set the sparql client:
+>>> archival.use_lodgateway_for_queries(l)
+
+# Or set the default method to use for sparql queries directly:
+# This expects a function that operates like the `LODGatewayClient.sparql()` function
 >>> archival.set_sparql_client_method(l.sparql)
+
 
 # NB if no SPARQL function is set, run_pattern() will raise a NoSPARQLEndpointSetError
 

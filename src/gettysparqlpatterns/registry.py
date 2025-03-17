@@ -102,6 +102,14 @@ class PatternSet:
     def set_sparql_client_method(self, sparql_client_method):
         self.sparql_client_method = sparql_client_method
 
+    def use_lodgateway_for_queries(self, lodgateway):
+        if lodgateway.capabilities.get("JSON-LD") is True:
+            self.sparql_client_method = lodgateway.sparql
+        else:
+            raise Exception(
+                f"LOD Gateway {lodgateway.object_base} does not report having JSON-LD functionality, so may not have SPARQL"
+            )
+
     def add_pattern(
         self,
         name: str,
