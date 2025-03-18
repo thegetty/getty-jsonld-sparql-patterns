@@ -57,7 +57,7 @@ ASK {
         "sparql_pattern": """PREFIX crm: <http://www.cidoc-crm.org/cidoc-crm/>
 ASK {
       ?inf a crm:E73_Information_Object .
-      graph ?inf { ?s ?p $URI . }
+      graph ?inf { ?s ?p <$URI> . }
       filter NOT EXISTS {
     ?inf crm:P2_has_type <https://data.getty.edu/local/thesaurus/aspace-finding-aid-status/notreadyforproduction> .
   }
@@ -118,7 +118,7 @@ SELECT ?accession ?inf ?findaidclass ?findaidclassname ?title WHERE {
 PREFIX aat: <http://vocab.getty.edu/aat/>
 
 SELECT ?informationobject WHERE { GRAPH ?informationobject {
-    ?inf crm:P190_has_symbolic_content $ACCESSION .
+    ?inf crm:P190_has_symbolic_content "$ACCESSION" .
     ?inf crm:P2_has_type aat:300312355 .
   }
 }""",
