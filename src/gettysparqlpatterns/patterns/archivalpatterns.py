@@ -91,12 +91,13 @@ SELECT ?component ?eadid WHERE {
   ?component ?idby ?foo .
   ?foo crm:P2_has_type <https://data.getty.edu/local/thesaurus/ead-id> .
   ?foo crm:P190_has_symbolic_content ?eadid .
-}""",
+} LIMIT $LIMIT""",
         "stype": "select",
+        "default_values": {"LIMIT": "800"},
     },
     {
         "name": "list_collections_w_findingaidstatus",
-        "description": "List all the published collections (top-level records) with their accession number, finding aid status, and title. Multiple titles will created multiple rows.",
+        "description": "List all the published collections (top-level records) with their accession number, finding aid status, and title. Multiple titles will created multiple rows. Default LIMIT parameter is set to 100.",
         "sparql_pattern": """PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX crm: <http://www.cidoc-crm.org/cidoc-crm/>
@@ -108,8 +109,9 @@ SELECT ?accession ?inf ?findaidclass ?findaidclassname ?title WHERE {
   ?inf crm:P94i_was_created_by ?creby .
   ?creby crm:P2_has_type ?findaidclass .
   ?findaidclass rdfs:label ?findaidclassname .
-}""",
+} LIMIT $LIMIT""",
         "stype": "select",
+        "default_values": {"LIMIT": "100"},
     },
     {
         "name": "get_collection_uri_with_accession_number",
