@@ -1,6 +1,6 @@
-from gettysparqlpatterns import PatternSet
+from gettysparqlpatterns import PatternSet, NoPatternsFoundError
 from gettysparqlpatterns.registry import BasePattern
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 import pytest
 
 
@@ -109,6 +109,23 @@ def test_import_patterns():
     assert "test" in imp_pattern.keyword_parameters
     assert imp_pattern.default_values.get("test") == 1
 
+    bad_pattern = {}
+    with pytest.raises(NoPatternsFoundError):
+        ps.import_patterns(bad_pattern)
+
+    bad_pattern2 = {"blah blah blah"}  # iterable but not a list
+    with pytest.raises(NoPatternsFoundError):
+        ps.import_patterns(bad_pattern2)
+
+    bad_pattern3 = {"blah blah blah": "fooo"}  # iterable but not a list
+    with pytest.raises(NoPatternsFoundError):
+        ps.import_patterns(bad_pattern3)
+
+    # make sure that what existed is unaffected
+    assert len(ps) == 1
+    imp_pattern = ps.get_pattern("ImportedPattern")
+    assert "ImportedPattern" == imp_pattern.name
+
 
 def test_format_pattern():
     ps = PatternSet(name="TestSet")
@@ -158,3 +175,62 @@ def test_iter(pattern_set):
     assert len(patterns) == 2
     assert patterns[0].name == "pattern1"
     assert patterns[1].name == "pattern2"
+
+
+# Test the import from URL method inc adding to existing:
+def test_import_patterns_from_url(pattern_set):
+    mock_response = Mock()
+    mock_response.json.return_value = [
+        {
+            "name": "pattern5",
+            "description": "desc5",
+            "sparql_pattern": "sparql5",
+            "stype": "ask",
+            "sparql_client_method": None,
+            "default_values": None,
+        },
+        {
+            "name": "pattern6",
+            "description": "desc6",
+            "sparql_pattern": "sparql6",
+            "stype": "select",
+            "sparql_client_method": None,
+            "default_values": None,
+        },
+    ]
+    with patch("requests.get", return_value=mock_response):
+        pattern_set.import_patterns_from_url("http://example.com/patterns")
+
+    # default is overwriting
+    assert len(pattern_set) == 2
+    assert pattern_set[0].name == "pattern5"
+    assert pattern_set[1].name == "pattern6"
+
+
+def test_import_patterns_from_url_add_to_existing(pattern_set):
+    mock_response = Mock()
+    mock_response.json.return_value = [
+        {
+            "name": "pattern5",
+            "description": "desc5",
+            "sparql_pattern": "sparql5",
+            "stype": "ask",
+            "sparql_client_method": None,
+            "default_values": None,
+        },
+        {
+            "name": "pattern6",
+            "description": "desc6",
+            "sparql_pattern": "sparql6",
+            "stype": "select",
+            "sparql_client_method": None,
+            "default_values": None,
+        },
+    ]
+    with patch("requests.get", return_value=mock_response):
+        pattern_set.import_patterns_from_url(
+            "http://example.com/patterns", add_to_existing=True
+        )
+    assert len(pattern_set) == 4
+    assert pattern_set[2].name == "pattern5"
+    assert pattern_set[3].name == "pattern6"

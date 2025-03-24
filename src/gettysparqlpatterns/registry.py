@@ -8,11 +8,14 @@ from typing import Literal, Callable
 import re
 
 from .utilities import (
+    parsed_sparql_response,
+)
+from .exceptions import (
     NoSuchPatternError,
     RequiredParametersMissingError,
     NoSPARQLEndpointSetError,
+    NoPatternsFoundError,
     PatternNotSetError,
-    parsed_sparql_response,
 )
 
 
@@ -205,28 +208,34 @@ class PatternSet:
             for name, pattern in self._patterns.items()
         ]
 
-    def import_patterns(self, patterns: list, clear_before_import: bool = True):
-        if _loaded := {p["name"]: BasePattern(**p) for p in patterns if p}:
-            if clear_before_import:
-                self._patterns = _loaded
-            else:
-                self._patterns.update(_loaded)
+    def import_patterns(self, patterns: list, add_to_existing: bool = False):
+        if not patterns:
+            raise NoPatternsFoundError("Cannot import patterns from an empty object")
+        try:
+            if _loaded := {p["name"]: BasePattern(**p) for p in patterns if p}:
+                if add_to_existing:
+                    self._patterns.update(_loaded)
+                else:
+                    self._patterns = _loaded
 
-            self._update_patterns_w_sparql_method()
+                self._update_patterns_w_sparql_method()
+        except (ValueError, TypeError):
+            raise NoPatternsFoundError(
+                "Could not interpret the data provided as a list of patterns to import."
+            )
 
-    def import_patterns_from_url(self, url: str, clear_before_import: bool = True):
+    def import_patterns_from_url(self, url: str, add_to_existing: bool = False):
         try:
             patterns = requests.get(url).json()
+            if isinstance(patterns, list):
+                self.import_patterns(patterns, add_to_existing)
+            else:
+                raise NoPatternsFoundError(
+                    f"Could not find a suitable patternset JSON at {url}"
+                )
+
         except requests.exceptions.JSONDecodeError:
             raise NoSuchPatternError("There are no patterns at that URL")
-
-        if _loaded := {p["name"]: BasePattern(**p) for p in patterns if p}:
-            if clear_before_import:
-                self._patterns = _loaded
-            else:
-                self._patterns.update(_loaded)
-
-            self._update_patterns_w_sparql_method()
 
     def format_pattern(self, name, **kwargs):
         if pattern := self._patterns.get(name):

@@ -1,12 +1,15 @@
 from .utilities import (
+    SPARQLResponseObj,
+    SPARQLURI,
+    SPARQLLiteral,
+)
+from .exceptions import (
     SPARQLPatternsError,
     NoSuchPatternError,
     RequiredParametersMissingError,
     NoSPARQLEndpointSetError,
+    NoPatternsFoundError,
     PatternNotSetError,
-    SPARQLResponseObj,
-    SPARQLURI,
-    SPARQLLiteral,
 )
 from .registry import SPARQLRegistry, PatternSet
 
@@ -21,6 +24,7 @@ __all__ = [
     "PatternSet",
     "SPARQLPatternsError",
     "NoSuchPatternError",
+    "NoPatternsFoundError",
     "RequiredParametersMissingError",
     "NoSPARQLEndpointSetError",
     "PatternNotSetError",

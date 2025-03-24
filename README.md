@@ -128,6 +128,10 @@ Parameters can be passed in as keyword parameters to the `run_pattern` method. T
 First image URI found from the responses: https://data.jpcarchive.org/media/image/dams:JPC-3bff80eb8006ef6630a072ae102fe727_0001_001
 ```
 
+#### `default_values` for parameters
+
+SPARQL templates may provide parameters (such as a LIMIT or SERVICE) where it may be useful to provide a default value. If a pattern has any default parameters, they will be in the `.default_values` attribute. Any parameter passed to a run or format method will override any default value of the same name.
+
 ### `run_pattern` SPARQL query type responses
 
 While the pattern set can be used to format SPARQL queries, the `run_pattern` method interprets the SPARQL response based on the type of query.
@@ -269,7 +273,7 @@ NB The reason why the `patterns/archivalpatterns.py` and `patterns/la_counts.py`
 
 # Import additional patterns without clearing the existing ones:
 >>> lacounts = SPARQLRegistry.get_patternsets("la_counts")
->>> newtest.import_patterns(lacounts.export_patterns(), clear_before_import=False)
+>>> newtest.import_patterns(lacounts.export_patterns(), add_to_existing=True)
 >>> newtest.list_patterns()
 ['Find_a_datatype', 'count_informationobjects', 'count_groups', 'count_persons', 'count_hmos', 'count_visualitems']
 >>>

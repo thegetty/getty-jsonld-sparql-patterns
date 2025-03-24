@@ -1,23 +1,3 @@
-class SPARQLPatternsError(ValueError):
-    pass
-
-
-class NoSuchPatternError(SPARQLPatternsError):
-    pass
-
-
-class PatternNotSetError(SPARQLPatternsError):
-    pass
-
-
-class RequiredParametersMissingError(SPARQLPatternsError):
-    pass
-
-
-class NoSPARQLEndpointSetError(SPARQLPatternsError):
-    pass
-
-
 class SPARQLResponseObj(str):
     """Catch-all subclass, in case of strange types in the responses (blank nodes?)"""
 
