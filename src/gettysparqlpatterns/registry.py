@@ -11,9 +11,8 @@ from .utilities import (
     NoSuchPatternError,
     RequiredParametersMissingError,
     NoSPARQLEndpointSetError,
-    SPARQLResponseObj,
-    SPARQLURI,
-    SPARQLLiteral,
+    PatternNotSetError,
+    parsed_sparql_response,
 )
 
 
@@ -51,6 +50,8 @@ class BasePattern:
         sparql_pattern: str,
         stype: Literal["ask", "select", "construct", "count"],
         description: str | None = None,
+        default_values: dict | None = None,
+        sparql_client_method: Callable[[str], dict | str] = None,
         **kwargs,
     ):
         self.name = name
@@ -63,6 +64,13 @@ class BasePattern:
         self._set_pattern(
             sparql_pattern
         )  # Find out what parameters are in the sparql query, if any
+
+        # Allow for default values to be set (useful for LIMIT or SERVICE URIs)
+        self.default_values = {}
+        if isinstance(default_values, dict):
+            self.default_values = default_values
+
+        self.sparql_client_method = sparql_client_method
 
     def _set_pattern(self, sparql_pattern):
         try:
@@ -83,8 +91,32 @@ class BasePattern:
             raise e
 
     def get_query(self, **kwargs):
+        # Set with defaults, and then update with the passed parameters
+        q_kwargs = self.default_values.copy()
+        q_kwargs.update(kwargs)
+
+        if not all([x in q_kwargs for x in self.keyword_parameters]):
+            raise RequiredParametersMissingError(
+                f"Query requires the following parameters: {self.keyword_parameters}"
+            )
+
         if self.sparql_pattern:
-            return self.sparql_pattern.substitute(kwargs)
+            logger.debug(
+                f"Templating '{self.name}' sparql pattern with parameters {q_kwargs}"
+            )
+            return self.sparql_pattern.substitute(q_kwargs)
+        else:
+            raise PatternNotSetError("The sparql_pattern is not set and cannot be run.")
+
+    def run(self, sparql_client_method: Callable[[str], dict] = None, **kwargs):
+        if not sparql_client_method:
+            sparql_client_method = self.sparql_client_method
+
+        if sparql_client_method is None:
+            raise NoSPARQLEndpointSetError()
+
+        query = self.get_query(**kwargs)
+        return parsed_sparql_response(sparql_client_method(query), self.stype)
 
 
 class PatternSet:
@@ -101,14 +133,21 @@ class PatternSet:
 
     def set_sparql_client_method(self, sparql_client_method):
         self.sparql_client_method = sparql_client_method
+        self._update_patterns_w_sparql_method()
 
     def use_lodgateway_for_queries(self, lodgateway):
         if lodgateway.capabilities.get("JSON-LD") is True:
             self.sparql_client_method = lodgateway.sparql
+            self._update_patterns_w_sparql_method()
         else:
             raise Exception(
                 f"LOD Gateway {lodgateway.object_base} does not report having JSON-LD functionality, so may not have SPARQL"
             )
+
+    def _update_patterns_w_sparql_method(self):
+        if self.sparql_client_method:
+            for k, v in self._patterns.items():
+                v.sparql_client_method = self.sparql_client_method
 
     def add_pattern(
         self,
@@ -116,12 +155,15 @@ class PatternSet:
         sparql_pattern: str,
         stype: Literal["ask", "select", "construct", "count"],
         description: str | None = None,
+        default_values: dict | None = None,
     ):
         self._patterns[name] = BasePattern(
             name=name,
             description=description or "No description given",
             sparql_pattern=sparql_pattern,
             stype=stype,
+            sparql_client_method=self.sparql_client_method,
+            default_values=default_values,
         )
 
     def browse_patterns(self, by_type=None):
@@ -158,6 +200,7 @@ class PatternSet:
                 "sparql_pattern": pattern.sparql_pattern.template,
                 "stype": pattern.stype,
                 "keyword_parameters": pattern.keyword_parameters,
+                "default_values": pattern.default_values,
             }
             for name, pattern in self._patterns.items()
         ]
@@ -168,6 +211,8 @@ class PatternSet:
                 self._patterns = _loaded
             else:
                 self._patterns.update(_loaded)
+
+            self._update_patterns_w_sparql_method()
 
     def import_patterns_from_url(self, url: str, clear_before_import: bool = True):
         try:
@@ -181,12 +226,10 @@ class PatternSet:
             else:
                 self._patterns.update(_loaded)
 
+            self._update_patterns_w_sparql_method()
+
     def format_pattern(self, name, **kwargs):
         if pattern := self._patterns.get(name):
-            if not all([x in kwargs for x in pattern.keyword_parameters]):
-                raise RequiredParametersMissingError(
-                    f"Query requires the following parameters: {pattern.keyword_parameters}"
-                )
             return pattern.get_query(**kwargs)
         else:
             raise NoSuchPatternError(f"'{name} not found'")
@@ -201,48 +244,16 @@ class PatternSet:
             raise NoSPARQLEndpointSetError()
 
         query = self.format_pattern(name, **kwargs)
-        resp = sparql_client_method(query)
-        match resp:
-            case {"head": {}, "boolean": resp}:
-                return resp
-            case {"head": {"vars": [*_]}, "results": {"bindings": [*results]}}:
-                # assume that any results returned is a truthy response
-                if self._patterns.get(name).stype == "count":
-                    match results:
-                        case [
-                            {
-                                "count": {
-                                    "datatype": "http://www.w3.org/2001/XMLSchema#integer",
-                                    "type": "literal",
-                                    "value": count,
-                                }
-                            }
-                        ]:
-                            return int(count)
+        return parsed_sparql_response(
+            sparql_client_method(query), self._patterns.get(name).stype
+        )
 
-                # Process the response as a standard SELECT response
-                parsed_results = []
-                for resultrow in results:
-                    row = {}
-                    for k, v in resultrow.items():
-                        match v:
-                            case {
-                                "datatype": "http://www.w3.org/2001/XMLSchema#integer",
-                                "type": "literal",
-                                "value": value,
-                            }:
-                                row[k] = int(value)
-                            case {"type": "uri", "value": value}:
-                                row[k] = SPARQLURI(value)
-                            case {"type": "literal", "value": value, **other}:
-                                datatype = other.get("datatype")
-                                row[k] = SPARQLLiteral(value, datatype)
-                            case {"type": othertype, "value": value, **other}:
-                                datatype = other.get("datatype")
-                                row[k] = SPARQLResponseObj(
-                                    value, othertype, datatype=datatype
-                                )
-                    parsed_results.append(row)
-                return parsed_results
-            case other:
-                return other
+    # Ducktype a list
+    def __iter__(self):
+        return iter(self._patterns.values())
+
+    def __len__(self):
+        return len(self._patterns)
+
+    def __getitem__(self, index):
+        return list(self._patterns.values())[index]

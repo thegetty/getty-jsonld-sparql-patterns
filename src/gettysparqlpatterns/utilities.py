@@ -6,6 +6,10 @@ class NoSuchPatternError(SPARQLPatternsError):
     pass
 
 
+class PatternNotSetError(SPARQLPatternsError):
+    pass
+
+
 class RequiredParametersMissingError(SPARQLPatternsError):
     pass
 
@@ -63,3 +67,50 @@ class SPARQLLiteral(str):
                 f'SPARQLLiteral("{super().__repr__()}", datatype="{self.datatype!r}")'
             )
         return f'SPARQLLiteral("{super().__repr__()}")'
+
+
+def parsed_sparql_response(resp, stype):
+    match resp:
+        case {"head": {}, "boolean": resp}:
+            return resp
+        case {"head": {"vars": [*_]}, "results": {"bindings": [*results]}}:
+            # assume that any results returned is a truthy response
+            if stype == "count":
+                match results:
+                    case [
+                        {
+                            "count": {
+                                "datatype": "http://www.w3.org/2001/XMLSchema#integer",
+                                "type": "literal",
+                                "value": count,
+                            }
+                        }
+                    ]:
+                        return int(count)
+
+            # Process the response as a standard SELECT response
+            parsed_results = []
+            for resultrow in results:
+                row = {}
+                for k, v in resultrow.items():
+                    match v:
+                        case {
+                            "datatype": "http://www.w3.org/2001/XMLSchema#integer",
+                            "type": "literal",
+                            "value": value,
+                        }:
+                            row[k] = int(value)
+                        case {"type": "uri", "value": value}:
+                            row[k] = SPARQLURI(value)
+                        case {"type": "literal", "value": value, **other}:
+                            datatype = other.get("datatype")
+                            row[k] = SPARQLLiteral(value, datatype)
+                        case {"type": othertype, "value": value, **other}:
+                            datatype = other.get("datatype")
+                            row[k] = SPARQLResponseObj(
+                                value, othertype, datatype=datatype
+                            )
+                parsed_results.append(row)
+            return parsed_results
+        case other:
+            return other

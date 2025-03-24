@@ -3,16 +3,12 @@ from .utilities import (
     NoSuchPatternError,
     RequiredParametersMissingError,
     NoSPARQLEndpointSetError,
+    PatternNotSetError,
     SPARQLResponseObj,
     SPARQLURI,
     SPARQLLiteral,
 )
-from .registry import (
-    SPARQLRegistry,
-    PatternSet,
-)
-
-from .patterns import archival_patterns
+from .registry import SPARQLRegistry, PatternSet
 
 # VERSION number
 import importlib.metadata
@@ -23,11 +19,11 @@ __version__ = importlib.metadata.version("gettysparqlpatterns")
 __all__ = [
     "SPARQLRegistry",
     "PatternSet",
-    "archival_patterns",
     "SPARQLPatternsError",
     "NoSuchPatternError",
     "RequiredParametersMissingError",
     "NoSPARQLEndpointSetError",
+    "PatternNotSetError",
     "SPARQLResponseObj",
     "SPARQLURI",
     "SPARQLLiteral",
