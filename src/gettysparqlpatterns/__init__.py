@@ -11,7 +11,11 @@ from .exceptions import (
     NoPatternsFoundError,
     PatternNotSetError,
 )
+import gettysparqlpatterns.data
 from .registry import SPARQLRegistry, PatternSet
+
+# Register built in patterns
+from .patterns import pattern_load
 
 # VERSION number
 import importlib.metadata
@@ -33,3 +37,5 @@ __all__ = [
     "SPARQLLiteral",
     "__version__",
 ]
+
+pattern_load()

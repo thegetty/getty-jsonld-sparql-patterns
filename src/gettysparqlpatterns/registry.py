@@ -24,18 +24,22 @@ logger = logging.getLogger(__name__)
 
 class SPARQLRegistry:
     _registry = {}
-    _descriptions = {}
 
     @classmethod
     def register(cls, name, patternset):
         cls._registry[name] = patternset
 
     @classmethod
-    def get_patternsets(cls, name=None):
-        if not name:
-            return cls._registry
+    def get_patternsets(cls):
+        return cls._registry
+
+    @classmethod
+    def get_patternset(cls, name):
+        p = cls._registry.get(name)
+        if p is not None:
+            return p
         else:
-            return cls._registry.get(name)
+            raise NoSuchPatternError(f"{name} is not a known patternset.")
 
     @classmethod
     def list_pattern_names(cls):

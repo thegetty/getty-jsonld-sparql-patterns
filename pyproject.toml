@@ -5,6 +5,13 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.dynamic]
 dependencies = {file = ["requirements.txt"]}
 
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+gettysparqlpatterns = ["data/**/*"]
+
+
 [tool.black]
 line-length = 88
 target-version = ['py310']
@@ -22,3 +29,4 @@ extend-exclude = '''
 name = "gettysparqlpatterns"
 dynamic = ["description", "dependencies", "readme", "keywords", "license", "classifiers", "version"]
 requires-python = ">=3.10"
+
