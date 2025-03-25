@@ -7,7 +7,8 @@
     "keyword_parameters": [
       "URI"
     ],
-    "default_values": {}
+    "default_values": {},
+    "applies_to": ["HumanMadeObject", "InformationObject"]
   },
   {
     "name": "inf_not_ready",
@@ -27,7 +28,8 @@
     "keyword_parameters": [
       "URI"
     ],
-    "default_values": {}
+    "default_values": {},
+    "applies_to": ["HumanMadeObject"]
   },
   {
     "name": "is_part_of_production",
@@ -37,7 +39,8 @@
     "keyword_parameters": [
       "URI"
     ],
-    "default_values": {}
+    "default_values": {},
+    "applies_to": ["Person", "Group", "LinguisticObject", "Set"]
   },
   {
     "name": "hmo_has_component",
@@ -47,7 +50,8 @@
     "keyword_parameters": [
       "URI"
     ],
-    "default_values": {}
+    "default_values": {},
+    "applies_to": ["HumanMadeObject"]
   },
   {
     "name": "hmo_list_components",
@@ -57,7 +61,8 @@
     "keyword_parameters": [
       "URI"
     ],
-    "default_values": {}
+    "default_values": {},
+    "applies_to": ["HumanMadeObject"]
   },
   {
     "name": "list_collections",

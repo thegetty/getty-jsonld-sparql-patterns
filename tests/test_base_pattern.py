@@ -17,12 +17,28 @@ def test_init():
         stype="select",
         description="Test pattern",
         default_values={"LIMIT": 10},
+        applies_to=["HumanMadeObject"],
     )
     assert pattern.name == "test"
     assert pattern.description == "Test pattern"
     assert pattern.sparql_pattern.template == "SELECT * WHERE { ?s ?p ?o } LIMIT $LIMIT"
     assert pattern.stype == "select"
     assert pattern.default_values == {"LIMIT": 10}
+    assert pattern.applies_to == ["HumanMadeObject"]
+
+
+# Unit tests
+def test_init_applies_to_without_list():
+    pattern = BasePattern(
+        name="test",
+        sparql_pattern="SELECT * WHERE { ?s ?p ?o } LIMIT $LIMIT",
+        stype="select",
+        description="Test pattern",
+        default_values={"LIMIT": 10},
+        applies_to="HumanMadeObject",
+    )
+    assert pattern.name == "test"
+    assert pattern.applies_to == ["HumanMadeObject"]
 
 
 def test_set_pattern():

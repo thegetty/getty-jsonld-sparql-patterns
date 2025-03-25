@@ -6,9 +6,10 @@ from gettysparqlpatterns.exceptions import NoSuchPatternError
 
 def test_builtin_patterns_loaded():
     bp = SPARQLRegistry.list_pattern_names()
-    assert len(bp) == 2
+    assert len(bp) == 3
     assert "archival" in bp
     assert "la_counts" in bp
+    assert "linked_art_filters" in bp
 
 
 @pytest.fixture

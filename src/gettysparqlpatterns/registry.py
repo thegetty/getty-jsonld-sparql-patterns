@@ -22,6 +22,20 @@ from .exceptions import (
 logger = logging.getLogger(__name__)
 
 
+def _match(obj, by_type, by_applies_to):
+    if not by_type and not by_applies_to:
+        return True
+    elif by_type is not None:
+        if by_applies_to not in [None, []]:
+            if by_type == obj.stype and by_applies_to in obj.applies_to:
+                return True
+        elif by_type == obj.stype:
+            return True
+    elif by_applies_to not in [None, []] and by_applies_to in obj.applies_to:
+        return True
+    return False
+
+
 class SPARQLRegistry:
     _registry = {}
 
@@ -58,6 +72,7 @@ class BasePattern:
         stype: Literal["ask", "select", "construct", "count"],
         description: str | None = None,
         default_values: dict | None = None,
+        applies_to: list | None = None,
         sparql_client_method: Callable[[str], dict | str] = None,
         **kwargs,
     ):
@@ -76,6 +91,14 @@ class BasePattern:
         self.default_values = {}
         if isinstance(default_values, dict):
             self.default_values = default_values
+
+        self.applies_to = []
+        if applies_to:
+            match applies_to:
+                case [*_]:
+                    self.applies_to = applies_to
+                case _:
+                    self.applies_to = [applies_to]
 
         self.sparql_client_method = sparql_client_method
 
@@ -163,6 +186,7 @@ class PatternSet:
         stype: Literal["ask", "select", "construct", "count"],
         description: str | None = None,
         default_values: dict | None = None,
+        applies_to: list | None = None,
     ):
         self._patterns[name] = BasePattern(
             name=name,
@@ -173,28 +197,19 @@ class PatternSet:
             default_values=default_values,
         )
 
-    def browse_patterns(self, by_type=None):
-        if not by_type:
-            return [
-                (name, pattern.description, pattern, pattern.keyword_parameters)
-                for name, pattern in self._patterns.items()
-            ]
-        else:
-            return [
-                (name, pattern.description, pattern, pattern.keyword_parameters)
-                for name, pattern in self._patterns.items()
-                if pattern.stype == by_type
-            ]
+    def browse_patterns(self, by_type=None, by_applies_to=None):
+        return [
+            (name, pattern.description, pattern, pattern.keyword_parameters)
+            for name, pattern in self._patterns.items()
+            if _match(pattern, by_type, by_applies_to)
+        ]
 
-    def list_patterns(self, by_type=None):
-        if not by_type:
-            return [name for name, pattern in self._patterns.items()]
-        else:
-            return [
-                name
-                for name, pattern in self._patterns.items()
-                if pattern.stype == by_type
-            ]
+    def list_patterns(self, by_type=None, by_applies_to=None):
+        return [
+            name
+            for name, pattern in self._patterns.items()
+            if _match(pattern, by_type, by_applies_to)
+        ]
 
     def get_pattern(self, name):
         return self._patterns.get(name)
@@ -208,6 +223,7 @@ class PatternSet:
                 "stype": pattern.stype,
                 "keyword_parameters": pattern.keyword_parameters,
                 "default_values": pattern.default_values,
+                "applies_to": pattern.applies_to,
             }
             for name, pattern in self._patterns.items()
         ]

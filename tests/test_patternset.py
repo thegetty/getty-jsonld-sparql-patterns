@@ -148,15 +148,26 @@ def test_run_pattern():
     mock_method.assert_called_once_with("SELECT * WHERE {}")
 
 
-# test the list-like functionality:
-
-
 @pytest.fixture
 def pattern_set():
     ps = PatternSet(name="TestSet")
     ps._patterns = {
-        "pattern1": BasePattern("pattern1", "desc1", "sparql1", "ask", None, None),
-        "pattern2": BasePattern("pattern2", "desc2", "sparql2", "select", None, None),
+        "pattern1": BasePattern(
+            name="pattern1",
+            description="desc1",
+            sparql_pattern="sparql1",
+            stype="ask",
+            default_values={},
+            applies_to=["example"],
+        ),
+        "pattern2": BasePattern(
+            name="pattern2",
+            description="desc2",
+            sparql_pattern="sparql2",
+            stype="select",
+            default_values={"LIMIT": "1"},
+            applies_to=["example"],
+        ),
     }
     return ps
 
@@ -234,3 +245,52 @@ def test_import_patterns_from_url_add_to_existing(pattern_set):
     assert len(pattern_set) == 4
     assert pattern_set[2].name == "pattern5"
     assert pattern_set[3].name == "pattern6"
+
+
+def test_list_patterns_with_filters(pattern_set):
+    # Test list_patterns without filters
+    result = pattern_set.list_patterns()
+    assert result == ["pattern1", "pattern2"]
+
+    # Test list_patterns with by_type filter
+    result = pattern_set.list_patterns(by_type="construct")
+    assert result == []
+
+    # Test list_patterns with by_type filter
+    result = pattern_set.list_patterns(by_type="select")
+    assert result == ["pattern2"]
+
+    result = pattern_set.list_patterns(by_applies_to="example")
+    assert result == ["pattern1", "pattern2"]
+    # Test list_patterns with by_type filter
+
+    result = pattern_set.list_patterns(by_type="select", by_applies_to="example")
+    assert result == ["pattern2"]
+
+
+def test_browse_patterns_with_filters(pattern_set):
+    # Test browse_patterns without filters
+    result = pattern_set.browse_patterns()
+    assert len(result) == 2
+    assert result[0][0] == "pattern1"
+    assert result[1][0] == "pattern2"
+
+    # Test browse_patterns with by_type filte
+    result = pattern_set.browse_patterns(by_type="construct")
+    assert result == []
+
+    # Test browse_patterns with by_type filte
+    result = pattern_set.browse_patterns(by_type="select")
+    assert len(result) == 1
+    assert result[0][0] == "pattern2"
+
+    # Test browse_patterns with by_applies_to filter
+    result = pattern_set.browse_patterns(by_applies_to="example")
+    assert len(result) == 2
+    assert result[0][0] == "pattern1"
+    assert result[1][0] == "pattern2"
+
+    # Test browse_patterns with by_applies_to filter
+    result = pattern_set.browse_patterns(by_type="select", by_applies_to="example")
+    assert len(result) == 1
+    assert result[0][0] == "pattern2"

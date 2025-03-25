@@ -26,6 +26,16 @@ def pattern_load():
     _load_from_package(archival_patterns, "archival_patterns.json")
     SPARQLRegistry.register("archival", archival_patterns)
 
+    # Load data from a patternset exported as JSON
+    linked_art_filters = PatternSet(
+        name="Linked.Art Archival filters",
+        description="""A set of SPARQL patterns for testing if a given ArchivesSpace-derived resource URI is part of a valid, published resource (collection).""",
+    )
+
+    # import the base set of archival metadata patterns
+    _load_from_package(linked_art_filters, "linked_art_filters.json")
+    SPARQLRegistry.register("linked_art_filters", linked_art_filters)
+
     # Load the Linked Art count sparql patterns from an object:
     la_count_patterns = PatternSet(
         name="Counting numbers of Linked Art objects",
