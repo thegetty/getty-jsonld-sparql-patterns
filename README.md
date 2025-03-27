@@ -256,7 +256,7 @@ The patterns can be exported and imported as simple JSON-encodable data, and `Pa
 
 The creation of new patterns will require some trial and error, so it is expected that a PatternSet would be created in parts, and eventually exported to record the progress made and potentially to include in this module.
 
-NB The reason why the `patterns/archivalpatterns.py` and `patterns/la_counts.py` files are python files and not .json is because JSON does not allow strings to be broken over multiple lines and so, if far less readable than the more formatted python view of the same data. 
+NB The reason why the `data/archival_patterns.json` and the `la_count` (Linked Art Count) patterns are initialized differently is to show the two ways that the patterns could be encoded - one as JSON (SPARQL patterns on a single line with \n codes), and the other as a python data structure (which allows for multiline strings which are clearer to read).
 
 ```
 # Export
