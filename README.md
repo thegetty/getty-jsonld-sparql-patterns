@@ -187,6 +187,43 @@ First image URI found from the responses: https://data.jpcarchive.org/media/imag
 
 SPARQL templates may provide parameters (such as a LIMIT or SERVICE) where it may be useful to provide a default value. If a pattern has any default parameters, they will be in the `.default_values` attribute. Any parameter passed to a run or format method will override any default value of the same name.
 
+#### Adding SPARQL Patterns to a PatternSet
+
+Patterns can be added to (or updated in) a PatternSet using the 'add_pattern' method, supplying the parameters needed to configure it correctly. If a pattern is added using the same 'name' as an existing one, the new pattern will overwrite the old one.
+
+The method takes the following parameters:
+
+```
+add_pattern(
+    name: str, 
+    sparql_pattern: str, 
+    stype: Literal['ask', 'select', 'construct', 'count'], 
+    description: str | None = None, 
+    default_values: dict | None = None, 
+    applies_to: list | None = None, 
+    ask_filter: bool | None = None
+    )
+```
+
+Mandatory:
+- 'name'
+  - the name or label for the pattern. Used to reference it within the PatternSet
+- 'sparql_pattern'
+  - The 'string.Template' formatted SPARQL pattern. See https://docs.python.org/3/library/string.html#template-strings for more information. 'string.Template' was used to avoid having to escape every use of '{}' characters, which are common in SPARQL.
+- 'stype'. Affects how the 'run' function interprets the response from the SPARQL engine.
+  - 'select' - Expects a set of rows, which will be turned into a list of rows, expressed as 'dict' objects.
+  - 'construct' - Expects some sort of response which should not be interpreted as a query response, and will be returned unchanged to the client.
+  - 'ask' - will return 'true' or 'false'
+  - 'count' - Special case of a 'select' query that will contain a '?count' variable that should be cast as an integer as its return value.
+
+(There are more details on these types further on in this README).
+
+Optional:
+- 'description' - Description of the aim of this SPARQL pattern as documentation.
+- 'default_values' - a dict of default values to use in the template, if none are provided by the user. For example, the pattern may provide 'LIMIT $LIMIT' to allow for a custom number of rows to be returned. Setting 'default_values' to `{"LIMIT": "10"}` would ensure that it would default to 10 otherwise.
+- 'applies_to' - List of types that the SPARQL filter it targeted for. This is primarily used to help filtering or selecting useful patterns to use, and the PatternSet list/browse functions accept a parameter `by_applies_to` which can be used to show only exact matches.
+- 'ask_filter' - a boolean that indicates whether a SPARQL ASK response was 'successful' or not. This depends on the query and the business logic of the intent, as a 'success' could mean that the ASK is False for a given URI.
+
 ### `run_pattern` SPARQL query type responses
 
 While the pattern set can be used to format SPARQL queries, the `run_pattern` method interprets the SPARQL response based on the type of query.
