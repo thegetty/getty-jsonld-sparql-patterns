@@ -6,10 +6,27 @@ from gettysparqlpatterns.exceptions import NoSuchPatternError
 
 def test_builtin_patterns_loaded():
     bp = SPARQLRegistry.list_pattern_names()
-    assert len(bp) == 3
+    assert len(bp) == 1
     assert "archival" in bp
-    assert "la_counts" in bp
-    assert "linked_art_filters" in bp
+
+
+def test_load_preset_and_remove():
+    bp = SPARQLRegistry.list_pattern_names()
+    assert len(bp) == 1
+    assert "archival" in bp
+
+    SPARQLRegistry.load_from_preset(
+        "test", SPARQLRegistry.list_available_patternset_presets()[0]
+    )
+    newlist = SPARQLRegistry.list_pattern_names()
+    assert len(newlist) == 2
+    assert "test" in newlist
+
+    SPARQLRegistry.remove_patternset("test")
+
+    bp = SPARQLRegistry.list_pattern_names()
+    assert len(bp) == 1
+    assert "archival" in bp
 
 
 @pytest.fixture

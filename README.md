@@ -3,6 +3,8 @@ A python library of SPARQL queries for use with the published data structures an
 
 ## Example Usage:
 
+### SPARQLRegistry
+
 The key class is the `SPARQLRegistry`:
 
 ```
@@ -15,10 +17,63 @@ This class can be used directly, and contains references to all the pattern sets
 
 ```
 >>> SPARQLRegistry.browse_patternsets()
-[('archival', <gettysparqlpatterns.registry.PatternSet object at 0x109456020>, 'A set of SPARQL patterns for getting specific bits of information from Getty-published\n    archival metadata held in Linked Data.'), ('la_counts', <gettysparqlpatterns.registry.PatternSet object at 0x10975bdc0>, 'A set of SPARQL patterns for counting how many resources of certain types are known to the SPARQL endpoint.')]
+[('archival', <gettysparqlpatterns.registry.PatternSet object at 0x110228280>, 'A set of patterns to explore different connections between resources in the Getty archival dataset')]
 >>> SPARQLRegistry.list_pattern_names()
-['archival', 'la_counts']
+['archival']
 ```
+
+NB Only one patternset is pre-loaded currently, and in future the `SPARQLRegistry` might not preemptively load any patternset without request.
+
+#### list available patternsets
+
+This package ships with a few patternsets that can be loaded and registered as desired. To see the list of built in patternsets:
+
+```
+>>> SPARQLRegistry.list_available_patternset_presets()
+['archival_patterns.json', 'la_counts.json', 'linked_art_filters.json']
+```
+
+To load a patternset from these:
+
+```
+>>> # Either load it as part of the registered sets
+>>> SPARQLRegistry.load_from_preset('linked_art_counts', 'la_counts.json')
+<gettysparqlpatterns.registry.PatternSet object at 0x10d94e290>
+>>> SPARQLRegistry.list_pattern_names()
+['archival', 'linked_art_counts']
+
+>>> # Or, load it as a standalone pattern set:
+>>> p = PatternSet(from_builtin="la_counts.json")
+>>> p.name, p.description
+('Counting numbers of Linked Art objects', 'A set of SPARQL patterns for counting how many resources of certain types are known to the SPARQL endpoint.')
+>>> # NB This does not add the PatternSet to the registry:
+>>> SPARQLRegistry.list_pattern_names()
+['archival']
+
+>>> # A PatternSet can be registered with a name so that any function can find and use it:
+>>> SPARQLRegistry.register("linked_art_counts", p)
+>>> SPARQLRegistry.list_pattern_names()
+['archival', 'linked_art_counts']
+```
+
+To remove a registered pattern set from the SPARQLRegistry:
+
+```
+>>> SPARQLRegistry.register("linked_art_counts", p)
+
+...
+
+>>> SPARQLRegistry.remove_patternset("linked_art_counts")
+>>> SPARQLRegistry.list_pattern_names()
+['archival']
+```
+
+#### Why register pattern sets?
+
+When a PatternSet is loaded, the SPARQL patterns are loaded, parsed and held as `string.Template` objects. The data in the object is immutable (aside from the sparql_client_method attribute), and so can be freely used with multiple threads and persisted. It also allows for encapsulated functions to reuse previously retrieved and loaded data, which may come from an HTTP endpoint.
+
+
+### PatternSet usage
 
 Each top-level pattern set holds one or more patterns, and these can be listed or browsed as before using the following methods:
 
@@ -277,4 +332,36 @@ NB The reason why the `data/archival_patterns.json` and the `la_count` (Linked A
 >>> newtest.list_patterns()
 ['Find_a_datatype', 'count_informationobjects', 'count_groups', 'count_persons', 'count_hmos', 'count_visualitems']
 >>>
+```
+
+The PatternSet can also be loaded from a remote JSON resource:
+
+```
+>>> ps = PatternSet(from_url="https://gist.githubusercontent.com/benosteen/1253ebccd3bde327a62da9bb5f43c0c0/raw/7d2fd523213c1d5bca43313911d4a2a36d7dc4f2/test.json")
+>>> ps.list_patterns()
+['inf_not_ready', 'hmo_not_ready', 'is_part_of_production']
+>>>
+```
+
+Or from an exported PatternSet that is part of this package:
+
+```
+>>> SPARQLRegistry.list_available_patternset_presets()
+['archival_patterns.json', 'la_counts.json', 'linked_art_filters.json']
+>>> ps = PatternSet(from_builtin="la_counts.json")
+>>> ps.list_patterns()
+['count_informationobjects', 'count_groups', 'count_persons', 'count_hmos', 'count_visualitems', 'count_hmos_with_nonexistant_visitems', 'count_hmos_with_existing_visitems']
+```
+
+Or directly from the exported version of another PatternSet (if loading from another source):
+
+```
+>>> export = p.export_patterns()
+
+... store 'export' in some other system, like an LOD Gateway for example
+
+>>> # When needed, 'json.load' the stored data into a variable ('export' in this example:)
+>>> ps = PatternSet(from_json=export)
+>>> ps.list_patterns()
+['inf_not_ready', 'hmo_not_ready', 'is_part_of_production']
 ```

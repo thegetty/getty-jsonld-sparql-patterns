@@ -80,13 +80,14 @@ def test_get_pattern():
 
 
 def test_export_patterns():
-    ps = PatternSet(name="TestSet")
+    ps = PatternSet(name="TestSet", description="Test description")
     ps.add_pattern(
         name="TestPattern", sparql_pattern="SELECT * WHERE {}", stype="select"
     )
     exported = ps.export_patterns()
-    assert len(exported) == 1
-    assert exported[0]["name"] == "TestPattern"
+    assert exported["name"] == "TestSet"
+    assert exported["description"] == "Test description"
+    assert exported["patterns"][0]["name"] == "TestPattern"
 
 
 def test_import_patterns():
@@ -294,3 +295,64 @@ def test_browse_patterns_with_filters(pattern_set):
     result = pattern_set.browse_patterns(by_type="select", by_applies_to="example")
     assert len(result) == 1
     assert result[0][0] == "pattern2"
+
+
+# Test alternate initialization routes
+
+# Sample data for testing
+sample_json = {
+    "name": "Alternate PatternSet",
+    "description": "A test pattern set",
+    "patterns": [
+        {
+            "name": "pattern1",
+            "description": "A test pattern",
+            "sparql_pattern": "SELECT * WHERE {?s ?p ?o} LIMIT $LIMIT",
+            "stype": "select",
+            "keyword_parameters": ["LIMIT"],
+            "default_values": {"LIMIT": "10"},
+            "applies_to": [],
+            "ask_filter": False,
+        }
+    ],
+}
+
+sample_url = "http://getty-example.com/patternset.json"
+
+# Mock response for requests.get
+mock_response = Mock()
+mock_response.json.return_value = sample_json
+
+
+def test_init_from_json():
+    pattern_set = PatternSet(from_json=sample_json)
+    assert pattern_set.name == "Alternate PatternSet"
+    assert pattern_set.description == "A test pattern set"
+    assert len(pattern_set._patterns) == 1
+    assert "pattern1" in pattern_set._patterns
+
+
+@patch("requests.get", return_value=mock_response)
+def test_init_from_url(mock_get):
+    pattern_set = PatternSet(from_url=sample_url)
+    mock_get.assert_called_once_with(sample_url)
+    assert pattern_set.name == "Alternate PatternSet"
+    assert pattern_set.description == "A test pattern set"
+    assert len(pattern_set._patterns) == 1
+    assert "pattern1" in pattern_set._patterns
+
+
+def _mock_load_to_patternset(pattern_set, data_name):
+    if data_name == "sample.json":
+        pattern_set.import_patterns(sample_json)
+
+
+def test_init_from_builtin():
+    with patch(
+        "gettysparqlpatterns.registry.load_from_package", new=_mock_load_to_patternset
+    ):
+        pattern_set = PatternSet(from_builtin="sample.json")
+        assert pattern_set.name == "Alternate PatternSet"
+        assert pattern_set.description == "A test pattern set"
+        assert len(pattern_set._patterns) == 1
+        assert "pattern1" in pattern_set._patterns
