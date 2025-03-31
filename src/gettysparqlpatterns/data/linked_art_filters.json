@@ -1,35 +1,51 @@
-[
-  {
-    "name": "inf_not_ready",
-    "description": "Given a Linked Art InformationObject URI run an ASK query to see if it is for preview only and not intended for production.",
-    "sparql_pattern": "PREFIX crm: <http://www.cidoc-crm.org/cidoc-crm/>\nASK {\n  <$URI> crm:P2_has_type <https://data.getty.edu/local/thesaurus/aspace-finding-aid-status/notreadyforproduction> .\n} ",
-    "stype": "ask",
-    "keyword_parameters": [
-      "URI"
-    ],
-    "default_values": {},
-    "applies_to": ["InformationObject"]
-  },
-  {
-    "name": "hmo_not_ready",
-    "description": "Given a Linked Art HumanMadeObject URI run an ASK query to see if it is for preview only and not intended for production.",
-    "sparql_pattern": "PREFIX crm: <http://www.cidoc-crm.org/cidoc-crm/>\nASK {\n  ?inf crm:P2_has_type <https://data.getty.edu/local/thesaurus/aspace-finding-aid-status/notreadyforproduction> .\n  <$URI> crm:P46i_forms_part_of ?inf .\n} ",
-    "stype": "ask",
-    "keyword_parameters": [
-      "URI"
-    ],
-    "default_values": {},
-    "applies_to": ["HumanMadeObject"]
-  },
-  {
-    "name": "is_part_of_production",
-    "description": "Tests to see if the given URI is the 'object' of any triple in an InformationObject named graph where the InformationObject is not marked as not ready for production",
-    "sparql_pattern": "PREFIX crm: <http://www.cidoc-crm.org/cidoc-crm/>\nASK {\n      ?inf a crm:E73_Information_Object .\n      graph ?inf { ?s ?p <$URI> . }\n      filter NOT EXISTS {\n    ?inf crm:P2_has_type <https://data.getty.edu/local/thesaurus/aspace-finding-aid-status/notreadyforproduction> .\n  }\n}",
-    "stype": "ask",
-    "keyword_parameters": [
-      "URI"
-    ],
-    "default_values": {},
-    "applies_to": ["Person", "Group", "LinguisticObject", "Set"]
-  }
-]
+{    
+    "name": "Linked Art JPCA production-ready tests",
+    "description": "These tests are to determine whether a resource is marked as not ready for production either directly or indirectly. The top-level resource carries the flag for whether an item is 'completed', and any child component of this archival collection is then determined to be ready for production, as well as any other resource (agent, subject, and so on) that these child components reference.",
+    "patterns": [
+        {
+            "applies_to": [
+                "InformationObject"
+            ],
+            "ask_filter": false,
+            "default_values": {},
+            "description": "Given a Linked Art InformationObject URI run an ASK query to see if it is for preview only and not intended for production.",
+            "keyword_parameters": [
+                "URI"
+            ],
+            "name": "inf_not_ready",
+            "sparql_pattern": "PREFIX crm: <http://www.cidoc-crm.org/cidoc-crm/>\nASK {\n  <$URI> crm:P2_has_type <https://data.getty.edu/local/thesaurus/aspace-finding-aid-status/notreadyforproduction> .\n} ",
+            "stype": "ask"
+        },
+        {
+            "applies_to": [
+                "HumanMadeObject"
+            ],
+            "ask_filter": false,
+            "default_values": {},
+            "description": "Given a Linked Art HumanMadeObject URI run an ASK query to see if it is for preview only and not intended for production.",
+            "keyword_parameters": [
+                "URI"
+            ],
+            "name": "hmo_not_ready",
+            "sparql_pattern": "PREFIX crm: <http://www.cidoc-crm.org/cidoc-crm/>\nASK {\n  ?inf crm:P2_has_type <https://data.getty.edu/local/thesaurus/aspace-finding-aid-status/notreadyforproduction> .\n  <$URI> crm:P46i_forms_part_of ?inf .\n} ",
+            "stype": "ask"
+        },
+        {
+            "applies_to": [
+                "Person",
+                "Group",
+                "LinguisticObject",
+                "Set"
+            ],
+            "ask_filter": true,
+            "default_values": {},
+            "description": "Tests to see if the given URI is the 'object' of any triple in an InformationObject named graph where the InformationObject is not marked as not ready for production",
+            "keyword_parameters": [
+                "URI"
+            ],
+            "name": "is_part_of_production",
+            "sparql_pattern": "PREFIX crm: <http://www.cidoc-crm.org/cidoc-crm/>\nASK {\n      ?inf a crm:E73_Information_Object .\n      graph ?inf { ?s ?p <$URI> . }\n      filter NOT EXISTS {\n    ?inf crm:P2_has_type <https://data.getty.edu/local/thesaurus/aspace-finding-aid-status/notreadyforproduction> .\n  }\n}",
+            "stype": "ask"
+        }
+    ]
+}

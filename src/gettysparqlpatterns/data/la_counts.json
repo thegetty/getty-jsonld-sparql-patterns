@@ -1,0 +1,84 @@
+{
+  "name": "Counting numbers of Linked Art objects",
+  "description": "A set of SPARQL patterns for counting how many resources of certain types are known to the SPARQL endpoint.",
+  "patterns": [
+    {
+      "name": "count_informationobjects",
+      "description": "",
+      "sparql_pattern": "PREFIX crm: <http://www.cidoc-crm.org/cidoc-crm/>\nSELECT (count(distinct ?inf) as ?count) WHERE {\n  GRAPH ?inf {\n    ?inf <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> crm:E73_Information_Object .\n  } \n} LIMIT 1",
+      "stype": "count",
+      "keyword_parameters": [],
+      "default_values": {},
+      "applies_to": [],
+      "ask_filter": null
+    },
+    {
+      "name": "count_groups",
+      "description": "",
+      "sparql_pattern": "PREFIX crm: <http://www.cidoc-crm.org/cidoc-crm/>\nSELECT (count(distinct ?inf) as ?count) WHERE {\n  GRAPH ?inf {\n    ?inf <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> crm:E74_Group .\n  } \n} LIMIT 1",
+      "stype": "count",
+      "keyword_parameters": [],
+      "default_values": {},
+      "applies_to": [],
+      "ask_filter": null
+    },
+    {
+      "name": "count_persons",
+      "description": "",
+      "sparql_pattern": "PREFIX crm: <http://www.cidoc-crm.org/cidoc-crm/>\nSELECT (count(distinct ?inf) as ?count) WHERE {\n  GRAPH ?inf {\n    ?inf <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> crm:E21_Person .\n  } \n} LIMIT 1",
+      "stype": "count",
+      "keyword_parameters": [],
+      "default_values": {},
+      "applies_to": [],
+      "ask_filter": null
+    },
+    {
+      "name": "count_hmos",
+      "description": "",
+      "sparql_pattern": "PREFIX crm: <http://www.cidoc-crm.org/cidoc-crm/>\nSELECT (count(distinct ?inf) as ?count) WHERE {\n  GRAPH ?inf {\n    ?linkinf <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> crm:E73_Information_Object .\n    ?inf crm:P46i_forms_part_of ?linkinf .\n  } \n} LIMIT 1",
+      "stype": "count",
+      "keyword_parameters": [],
+      "default_values": {},
+      "applies_to": [],
+      "ask_filter": null
+    },
+    {
+      "name": "count_visualitems",
+      "description": "",
+      "sparql_pattern": "PREFIX crm: <http://www.cidoc-crm.org/cidoc-crm/>\nSELECT (count(distinct ?inf) as ?count) WHERE {\n  GRAPH ?inf {\n    ?inf <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> crm:E36_Visual_Item .\n  } \n} LIMIT 1",
+      "stype": "count",
+      "keyword_parameters": [],
+      "default_values": {},
+      "applies_to": [],
+      "ask_filter": null
+    },
+    {
+      "name": "count_hmos_with_nonexistant_visitems",
+      "description": "",
+      "sparql_pattern": "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \nPREFIX crm: <http://www.cidoc-crm.org/cidoc-crm/> \nSELECT (count (distinct ?images) as ?count) WHERE {  \n  ?hmo crm:P65_shows_visual_item ?images .  \n  FILTER NOT EXISTS {  \n    SERVICE <$VISITEM_SERVICE> {  \n      ?images rdf:type ?visimg .  \n    }\n  }\n} LIMIT 1",
+      "stype": "count",
+      "keyword_parameters": [
+        "VISITEM_SERVICE"
+      ],
+      "default_values": {
+        "VISITEM_SERVICE": "https://data.jpcarchive.org/media/sparql"
+      },
+      "applies_to": [],
+      "ask_filter": null
+    },
+    {
+      "name": "count_hmos_with_existing_visitems",
+      "description": "",
+      "sparql_pattern": "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \nPREFIX crm: <http://www.cidoc-crm.org/cidoc-crm/> \nSELECT (count (distinct ?images) as ?count) WHERE {  \n  ?hmo crm:P65_shows_visual_item ?images .  \n  FILTER EXISTS {  \n    SERVICE <$VISITEM_SERVICE> {  \n      ?images rdf:type ?visimg .  \n    }\n  }\n} LIMIT 1",
+      "stype": "count",
+      "keyword_parameters": [
+        "VISITEM_SERVICE"
+      ],
+      "default_values": {
+        "VISITEM_SERVICE": "https://data.jpcarchive.org/media/sparql"
+      },
+      "applies_to": [],
+      "ask_filter": null
+    }
+  ]
+}

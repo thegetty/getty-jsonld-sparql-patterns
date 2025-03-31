@@ -1,3 +1,10 @@
+import json
+
+from importlib.resources import files, as_file
+from pathlib import Path
+import gettysparqlpatterns.data
+
+
 class SPARQLResponseObj(str):
     """Catch-all subclass, in case of strange types in the responses (blank nodes?)"""
 
@@ -94,3 +101,26 @@ def parsed_sparql_response(resp, stype):
             return parsed_results
         case other:
             return other
+
+
+def load_from_package(patternset, datafilename: str):
+    source = files(gettysparqlpatterns.data).joinpath(datafilename)
+    with as_file(source) as jdoc:
+        pl = json.loads(jdoc.read_text())
+        patternset.import_patterns(pl)
+
+
+def list_available():
+    """Lists data files within a package using importlib.resources."""
+    files_list = []
+    package_path = files(gettysparqlpatterns.data)
+
+    if isinstance(package_path, Path):
+        for item in package_path.iterdir():
+            if item.name.endswith(".json"):
+                files_list.append(item.name)
+    else:
+        print("Could not access resources.")
+        return None
+
+    return files_list

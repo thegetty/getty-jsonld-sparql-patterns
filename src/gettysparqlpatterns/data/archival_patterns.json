@@ -1,114 +1,140 @@
-[
-  {
-    "name": "inf_hmo_not_ready",
-    "description": "Given a Linked Art HumanMadeObject or a InformationObject URI, run an ASK query to see if it is for preview only and not intended for production.",
-    "sparql_pattern": "PREFIX crm: <http://www.cidoc-crm.org/cidoc-crm/>\nASK {\n  {\n  <$URI> crm:P2_has_type <https://data.getty.edu/local/thesaurus/aspace-finding-aid-status/notreadyforproduction> .\n  } UNION {\n  ?inf crm:P2_has_type <https://data.getty.edu/local/thesaurus/aspace-finding-aid-status/notreadyforproduction> .\n  <$URI> crm:P46i_forms_part_of ?inf .\n  }\n} ",
-    "stype": "ask",
-    "keyword_parameters": [
-      "URI"
-    ],
-    "default_values": {},
-    "applies_to": ["HumanMadeObject", "InformationObject"]
-  },
-  {
-    "name": "inf_not_ready",
-    "description": "Given a Linked Art InformationObject URI run an ASK query to see if it is for preview only and not intended for production.",
-    "sparql_pattern": "PREFIX crm: <http://www.cidoc-crm.org/cidoc-crm/>\nASK {\n  <$URI> crm:P2_has_type <https://data.getty.edu/local/thesaurus/aspace-finding-aid-status/notreadyforproduction> .\n} ",
-    "stype": "ask",
-    "keyword_parameters": [
-      "URI"
-    ],
-    "default_values": {}
-  },
-  {
-    "name": "hmo_not_ready",
-    "description": "Given a Linked Art HumanMadeObject URI run an ASK query to see if it is for preview only and not intended for production.",
-    "sparql_pattern": "PREFIX crm: <http://www.cidoc-crm.org/cidoc-crm/>\nASK {\n  ?inf crm:P2_has_type <https://data.getty.edu/local/thesaurus/aspace-finding-aid-status/notreadyforproduction> .\n  <$URI> crm:P46i_forms_part_of ?inf .\n} ",
-    "stype": "ask",
-    "keyword_parameters": [
-      "URI"
-    ],
-    "default_values": {},
-    "applies_to": ["HumanMadeObject"]
-  },
-  {
-    "name": "is_part_of_production",
-    "description": "Tests to see if the given URI is the 'object' of any triple in an InformationObject named graph where the InformationObject is not marked as not ready for production",
-    "sparql_pattern": "PREFIX crm: <http://www.cidoc-crm.org/cidoc-crm/>\nASK {\n      ?inf a crm:E73_Information_Object .\n      graph ?inf { ?s ?p <$URI> . }\n      filter NOT EXISTS {\n    ?inf crm:P2_has_type <https://data.getty.edu/local/thesaurus/aspace-finding-aid-status/notreadyforproduction> .\n  }\n}",
-    "stype": "ask",
-    "keyword_parameters": [
-      "URI"
-    ],
-    "default_values": {},
-    "applies_to": ["Person", "Group", "LinguisticObject", "Set"]
-  },
-  {
-    "name": "hmo_has_component",
-    "description": "",
-    "sparql_pattern": "PREFIX crm: <http://www.cidoc-crm.org/cidoc-crm/>\nASK {\n  <$URI> crm:P46i_forms_part_of ?inf .\n} ",
-    "stype": "ask",
-    "keyword_parameters": [
-      "URI"
-    ],
-    "default_values": {},
-    "applies_to": ["HumanMadeObject"]
-  },
-  {
-    "name": "hmo_list_components",
-    "description": "",
-    "sparql_pattern": "PREFIX crm: <http://www.cidoc-crm.org/cidoc-crm/>\nSELECT ?inf WHERE {\n  <$URI> crm:P46i_forms_part_of ?inf .\n} ",
-    "stype": "select",
-    "keyword_parameters": [
-      "URI"
-    ],
-    "default_values": {},
-    "applies_to": ["HumanMadeObject"]
-  },
-  {
-    "name": "list_collections",
-    "description": "List all the published collections (top-level records) with accession numbers",
-    "sparql_pattern": "\nPREFIX crm: <http://www.cidoc-crm.org/cidoc-crm/>\nSELECT ?component ?eadid WHERE {\n  ?component ?idby ?foo .\n  ?foo crm:P2_has_type <https://data.getty.edu/local/thesaurus/ead-id> .\n  ?foo crm:P190_has_symbolic_content ?eadid .\n} LIMIT $LIMIT",
-    "stype": "select",
-    "keyword_parameters": [
-      "LIMIT"
-    ],
-    "default_values": {
-      "LIMIT": "800"
-    }
-  },
-  {
-    "name": "list_collections_w_findingaidstatus",
-    "description": "List all the published collections (top-level records) with their accession number, finding aid status, and title. Multiple titles will created multiple rows. Default LIMIT parameter is set to 100.",
-    "sparql_pattern": "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\nPREFIX crm: <http://www.cidoc-crm.org/cidoc-crm/>\nSELECT ?accession ?inf ?findaidclass ?findaidclassname ?title WHERE {\n  ?inf ?idby ?cl .\n  ?inf rdfs:label ?title .\n  ?cl crm:P2_has_type <https://data.getty.edu/local/thesaurus/ead-id> .\n  ?cl crm:P190_has_symbolic_content ?accession .\n  ?inf crm:P94i_was_created_by ?creby .\n  ?creby crm:P2_has_type ?findaidclass .\n  ?findaidclass rdfs:label ?findaidclassname .\n} LIMIT $LIMIT",
-    "stype": "select",
-    "keyword_parameters": [
-      "LIMIT"
-    ],
-    "default_values": {
-      "LIMIT": "100"
-    }
-  },
-  {
-    "name": "get_collection_uri_with_accession_number",
-    "description": "Given an accession number (ACCESSION), this query will find the matching component URI for the collection.",
-    "sparql_pattern": "PREFIX crm: <http://www.cidoc-crm.org/cidoc-crm/>\nPREFIX aat: <http://vocab.getty.edu/aat/>\n\nSELECT ?informationobject WHERE { GRAPH ?informationobject {\n    ?inf crm:P190_has_symbolic_content \"$ACCESSION\" .\n    ?inf crm:P2_has_type aat:300312355 .\n  }\n}",
-    "stype": "select",
-    "keyword_parameters": [
-      "ACCESSION"
-    ],
-    "default_values": {}
-  },
-  {
-    "name": "get_images_for_a_refid",
-    "description": "The query will find a list of VisualItem URIs for the images that fall under a specific archival component with a given refid. The expected structure is that the archival component is connected to one or more HMOs, which reference one or more images.",
-    "sparql_pattern": "PREFIX crm: <http://www.cidoc-crm.org/cidoc-crm/>\nPREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\nSELECT ?image WHERE {\n  ?hmo rdfs:label ?name .\n  ?hmo crm:P46i_forms_part_of/crm:P1_is_identified_by ?ident .\n  ?ident crm:P190_has_symbolic_content \"$refid\" .\n  ?ident crm:P2_has_type <https://data.getty.edu/local/thesaurus/ref-id> .\n  ?hmo crm:P65_shows_visual_item ?image\n} limit $LIMIT",
-    "stype": "select",
-    "keyword_parameters": [
-      "refid",
-      "LIMIT"
-    ],
-    "default_values": {
-      "LIMIT": "100"
-    }
-  }
-]
+{
+    "name": "Linked Art Archival Patterns",
+    "description": "A set of patterns to explore different connections between resources in the Getty archival dataset",
+    "patterns": [
+        {
+            "applies_to": [
+                "HumanMadeObject",
+                "InformationObject"
+            ],
+            "ask_filter": false,
+            "default_values": {},
+            "description": "Given a Linked Art HumanMadeObject or a InformationObject URI, run an ASK query to see if it is for preview only and not intended for production.",
+            "keyword_parameters": [
+                "URI"
+            ],
+            "name": "inf_hmo_not_ready",
+            "sparql_pattern": "PREFIX crm: <http://www.cidoc-crm.org/cidoc-crm/>\nASK {\n  {\n  <$URI> crm:P2_has_type <https://data.getty.edu/local/thesaurus/aspace-finding-aid-status/notreadyforproduction> .\n  } UNION {\n  ?inf crm:P2_has_type <https://data.getty.edu/local/thesaurus/aspace-finding-aid-status/notreadyforproduction> .\n  <$URI> crm:P46i_forms_part_of ?inf .\n  }\n} ",
+            "stype": "ask"
+        },
+        {
+            "applies_to": [
+                "InformationObject"
+            ],
+            "ask_filter": false,
+            "default_values": {},
+            "description": "Given a Linked Art InformationObject URI run an ASK query to see if it is for preview only and not intended for production.",
+            "keyword_parameters": [
+                "URI"
+            ],
+            "name": "inf_not_ready",
+            "sparql_pattern": "PREFIX crm: <http://www.cidoc-crm.org/cidoc-crm/>\nASK {\n  <$URI> crm:P2_has_type <https://data.getty.edu/local/thesaurus/aspace-finding-aid-status/notreadyforproduction> .\n} ",
+            "stype": "ask"
+        },
+        {
+            "applies_to": [
+                "HumanMadeObject"
+            ],
+            "ask_filter": false,
+            "default_values": {},
+            "description": "Given a Linked Art HumanMadeObject URI run an ASK query to see if it is for preview only and not intended for production.",
+            "keyword_parameters": [
+                "URI"
+            ],
+            "name": "hmo_not_ready",
+            "sparql_pattern": "PREFIX crm: <http://www.cidoc-crm.org/cidoc-crm/>\nASK {\n  ?inf crm:P2_has_type <https://data.getty.edu/local/thesaurus/aspace-finding-aid-status/notreadyforproduction> .\n  <$URI> crm:P46i_forms_part_of ?inf .\n} ",
+            "stype": "ask"
+        },
+        {
+            "applies_to": [
+                "Person",
+                "Group",
+                "LinguisticObject",
+                "Set"
+            ],
+            "ask_filter": true,
+            "default_values": {},
+            "description": "Tests to see if the given URI is the 'object' of any triple in an InformationObject named graph where the InformationObject is not marked as not ready for production",
+            "keyword_parameters": [
+                "URI"
+            ],
+            "name": "is_part_of_production",
+            "sparql_pattern": "PREFIX crm: <http://www.cidoc-crm.org/cidoc-crm/>\nASK {\n      ?inf a crm:E73_Information_Object .\n      graph ?inf { ?s ?p <$URI> . }\n      filter NOT EXISTS {\n    ?inf crm:P2_has_type <https://data.getty.edu/local/thesaurus/aspace-finding-aid-status/notreadyforproduction> .\n  }\n}",
+            "stype": "ask"
+        },
+        {
+            "applies_to": [
+                "HumanMadeObject"
+            ],
+            "ask_filter": true,
+            "default_values": {},
+            "description": "",
+            "keyword_parameters": [
+                "URI"
+            ],
+            "name": "hmo_has_component",
+            "sparql_pattern": "PREFIX crm: <http://www.cidoc-crm.org/cidoc-crm/>\nASK {\n  <$URI> crm:P46i_forms_part_of ?inf .\n} ",
+            "stype": "ask"
+        },
+        {
+            "applies_to": [
+                "HumanMadeObject"
+            ],
+            "default_values": {},
+            "description": "",
+            "keyword_parameters": [
+                "URI"
+            ],
+            "name": "hmo_list_components",
+            "sparql_pattern": "PREFIX crm: <http://www.cidoc-crm.org/cidoc-crm/>\nSELECT ?inf WHERE {\n  <$URI> crm:P46i_forms_part_of ?inf .\n} ",
+            "stype": "select"
+        },
+        {
+            "default_values": {
+                "LIMIT": "800"
+            },
+            "description": "List all the published collections (top-level records) with accession numbers",
+            "keyword_parameters": [
+                "LIMIT"
+            ],
+            "name": "list_collections",
+            "sparql_pattern": "\nPREFIX crm: <http://www.cidoc-crm.org/cidoc-crm/>\nSELECT ?component ?eadid WHERE {\n  ?component ?idby ?foo .\n  ?foo crm:P2_has_type <https://data.getty.edu/local/thesaurus/ead-id> .\n  ?foo crm:P190_has_symbolic_content ?eadid .\n} LIMIT $LIMIT",
+            "stype": "select"
+        },
+        {
+            "default_values": {
+                "LIMIT": "100"
+            },
+            "description": "List all the published collections (top-level records) with their accession number, finding aid status, and title. Multiple titles will created multiple rows. Default LIMIT parameter is set to 100.",
+            "keyword_parameters": [
+                "LIMIT"
+            ],
+            "name": "list_collections_w_findingaidstatus",
+            "sparql_pattern": "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\nPREFIX crm: <http://www.cidoc-crm.org/cidoc-crm/>\nSELECT ?accession ?inf ?findaidclass ?findaidclassname ?title WHERE {\n  ?inf ?idby ?cl .\n  ?inf rdfs:label ?title .\n  ?cl crm:P2_has_type <https://data.getty.edu/local/thesaurus/ead-id> .\n  ?cl crm:P190_has_symbolic_content ?accession .\n  ?inf crm:P94i_was_created_by ?creby .\n  ?creby crm:P2_has_type ?findaidclass .\n  ?findaidclass rdfs:label ?findaidclassname .\n} LIMIT $LIMIT",
+            "stype": "select"
+        },
+        {
+            "default_values": {},
+            "description": "Given an accession number (ACCESSION), this query will find the matching component URI for the collection.",
+            "keyword_parameters": [
+                "ACCESSION"
+            ],
+            "name": "get_collection_uri_with_accession_number",
+            "sparql_pattern": "PREFIX crm: <http://www.cidoc-crm.org/cidoc-crm/>\nPREFIX aat: <http://vocab.getty.edu/aat/>\n\nSELECT ?informationobject WHERE { GRAPH ?informationobject {\n    ?inf crm:P190_has_symbolic_content \"$ACCESSION\" .\n    ?inf crm:P2_has_type aat:300312355 .\n  }\n}",
+            "stype": "select"
+        },
+        {
+            "default_values": {
+                "LIMIT": "100"
+            },
+            "description": "The query will find a list of VisualItem URIs for the images that fall under a specific archival component with a given refid. The expected structure is that the archival component is connected to one or more HMOs, which reference one or more images.",
+            "keyword_parameters": [
+                "refid",
+                "LIMIT"
+            ],
+            "name": "get_images_for_a_refid",
+            "sparql_pattern": "PREFIX crm: <http://www.cidoc-crm.org/cidoc-crm/>\nPREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\nSELECT ?image WHERE {\n  ?hmo rdfs:label ?name .\n  ?hmo crm:P46i_forms_part_of/crm:P1_is_identified_by ?ident .\n  ?ident crm:P190_has_symbolic_content \"$refid\" .\n  ?ident crm:P2_has_type <https://data.getty.edu/local/thesaurus/ref-id> .\n  ?hmo crm:P65_shows_visual_item ?image\n} limit $LIMIT",
+            "stype": "select"
+        }
+    ]
+}

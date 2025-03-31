@@ -7,9 +7,8 @@ from typing import Literal, Callable
 # Workaround for the Template.get_identifiers only in py3.11+
 import re
 
-from .utilities import (
-    parsed_sparql_response,
-)
+from .utilities import parsed_sparql_response, load_from_package, list_available
+
 from .exceptions import (
     NoSuchPatternError,
     RequiredParametersMissingError,
@@ -40,7 +39,7 @@ class SPARQLRegistry:
     _registry = {}
 
     @classmethod
-    def register(cls, name, patternset):
+    def register(cls, name: str, patternset):
         cls._registry[name] = patternset
 
     @classmethod
@@ -48,7 +47,7 @@ class SPARQLRegistry:
         return cls._registry
 
     @classmethod
-    def get_patternset(cls, name):
+    def get_patternset(cls, name: str):
         p = cls._registry.get(name)
         if p is not None:
             return p
@@ -63,6 +62,21 @@ class SPARQLRegistry:
     def browse_patternsets(cls):
         return [(x, y, y.description) for x, y in cls._registry.items()]
 
+    @classmethod
+    def load_from_preset(cls, name: str, pkg_name: str):
+        patternset = PatternSet(name=name)
+        load_from_package(patternset, pkg_name)
+        cls.register(name, patternset)
+        return patternset
+
+    @classmethod
+    def remove_patternset(cls, name: str):
+        del cls._registry[name]
+
+    @classmethod
+    def list_available_patternset_presets(cls):
+        return list_available()
+
 
 class BasePattern:
     def __init__(
@@ -73,6 +87,9 @@ class BasePattern:
         description: str | None = None,
         default_values: dict | None = None,
         applies_to: list | None = None,
+        ask_filter: (
+            bool | None
+        ) = None,  # if used as a filter, which bool is the default 'allowed' value
         sparql_client_method: Callable[[str], dict | str] = None,
         **kwargs,
     ):
@@ -99,6 +116,14 @@ class BasePattern:
                     self.applies_to = applies_to
                 case _:
                     self.applies_to = [applies_to]
+
+        # optional, only used by ask filter
+        self.ask_filter = ask_filter
+        if self.stype == "ask" and self.ask_filter is None:
+            logger.warning(
+                "The pattern is an 'ask' type, but no allowed filter was added. Defaulting to 'True' as allowed."
+            )
+            self.ask_filter = True
 
         self.sparql_client_method = sparql_client_method
 
@@ -148,18 +173,47 @@ class BasePattern:
         query = self.get_query(**kwargs)
         return parsed_sparql_response(sparql_client_method(query), self.stype)
 
+    def filter(self, sparql_client_method: Callable[[str], dict] = None, **kwargs):
+        if self.stype != "ask":
+            raise NotImplementedError(
+                "The 'filter' method can only be run with 'ask' type queries"
+            )
+        if not sparql_client_method:
+            sparql_client_method = self.sparql_client_method
+
+        if sparql_client_method is None:
+            raise NoSPARQLEndpointSetError()
+
+        query = self.get_query(**kwargs)
+        return self.ask_filter == parsed_sparql_response(
+            sparql_client_method(query), self.stype
+        )
+
 
 class PatternSet:
     def __init__(
         self,
-        name: str,
+        name: str = "",
         description: str | None = None,
+        from_json: dict | None = None,
+        from_url: str | None = None,
+        from_builtin: str | None = None,
         sparql_client_method: Callable[[str], dict | str] = None,
     ):
-        self.name = name
-        self.description = description or "No description given."
-        self.sparql_client_method = sparql_client_method
+        self.name = ""
+        self.description = ""
         self._patterns = {}
+        self.sparql_client_method = sparql_client_method
+
+        if from_url is None and from_builtin is None and from_json is None:
+            self.name = name
+            self.description = description or "No description given."
+        elif from_url:
+            self.import_patterns_from_url(from_url, add_to_existing=False)
+        elif from_json:
+            self.import_patterns(from_json, add_to_existing=False)
+        else:
+            load_from_package(self, from_builtin)
 
     def set_sparql_client_method(self, sparql_client_method):
         self.sparql_client_method = sparql_client_method
@@ -187,6 +241,7 @@ class PatternSet:
         description: str | None = None,
         default_values: dict | None = None,
         applies_to: list | None = None,
+        ask_filter: bool | None = None,
     ):
         self._patterns[name] = BasePattern(
             name=name,
@@ -195,6 +250,7 @@ class PatternSet:
             stype=stype,
             sparql_client_method=self.sparql_client_method,
             default_values=default_values,
+            ask_filter=ask_filter,
         )
 
     def browse_patterns(self, by_type=None, by_applies_to=None):
@@ -215,30 +271,50 @@ class PatternSet:
         return self._patterns.get(name)
 
     def export_patterns(self):
-        return [
-            {
-                "name": name,
-                "description": pattern.description,
-                "sparql_pattern": pattern.sparql_pattern.template,
-                "stype": pattern.stype,
-                "keyword_parameters": pattern.keyword_parameters,
-                "default_values": pattern.default_values,
-                "applies_to": pattern.applies_to,
-            }
-            for name, pattern in self._patterns.items()
-        ]
+        return {
+            "name": self.name,
+            "description": self.description,
+            "patterns": [
+                {
+                    "name": name,
+                    "description": pattern.description,
+                    "sparql_pattern": pattern.sparql_pattern.template,
+                    "stype": pattern.stype,
+                    "keyword_parameters": pattern.keyword_parameters,
+                    "default_values": pattern.default_values,
+                    "applies_to": pattern.applies_to,
+                    "ask_filter": pattern.ask_filter,
+                }
+                for name, pattern in self._patterns.items()
+            ],
+        }
 
-    def import_patterns(self, patterns: list, add_to_existing: bool = False):
-        if not patterns:
+    def _load_patterns(self, patterns, add_to_existing):
+        if _loaded := {p["name"]: BasePattern(**p) for p in patterns if p}:
+            if add_to_existing:
+                self._patterns.update(_loaded)
+            else:
+                self._patterns = _loaded
+
+            self._update_patterns_w_sparql_method()
+
+    def import_patterns(self, patterns_data: list, add_to_existing: bool = False):
+        if not patterns_data or (
+            not isinstance(patterns_data, list) and "patterns" not in patterns_data
+        ):
             raise NoPatternsFoundError("Cannot import patterns from an empty object")
         try:
-            if _loaded := {p["name"]: BasePattern(**p) for p in patterns if p}:
-                if add_to_existing:
-                    self._patterns.update(_loaded)
-                else:
-                    self._patterns = _loaded
-
-                self._update_patterns_w_sparql_method()
+            match patterns_data:
+                case {"name": name, "description": description, "patterns": patterns}:
+                    if add_to_existing is False:
+                        # overwrite data
+                        self.name = name
+                        self.description = description
+                        self._load_patterns(patterns, add_to_existing)
+                case [*_]:
+                    self._load_patterns(patterns_data, add_to_existing)
+                case _:
+                    raise ValueError("Data not acceptable")
         except (ValueError, TypeError):
             raise NoPatternsFoundError(
                 "Could not interpret the data provided as a list of patterns to import."
@@ -246,13 +322,20 @@ class PatternSet:
 
     def import_patterns_from_url(self, url: str, add_to_existing: bool = False):
         try:
-            patterns = requests.get(url).json()
-            if isinstance(patterns, list):
-                self.import_patterns(patterns, add_to_existing)
-            else:
-                raise NoPatternsFoundError(
-                    f"Could not find a suitable patternset JSON at {url}"
-                )
+            patterns_data = requests.get(url).json()
+            match patterns_data:
+                case {"name": name, "description": description, "patterns": patterns}:
+                    if add_to_existing is False:
+                        # overwrite data
+                        self.name = name
+                        self.description = description
+                        self._load_patterns(patterns, add_to_existing)
+                case [*_]:
+                    self._load_patterns(patterns_data, add_to_existing)
+                case _:
+                    raise NoPatternsFoundError(
+                        f"Could not find a suitable patternset JSON at {url}"
+                    )
 
         except requests.exceptions.JSONDecodeError:
             raise NoSuchPatternError("There are no patterns at that URL")
