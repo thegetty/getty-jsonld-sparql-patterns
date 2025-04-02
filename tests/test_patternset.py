@@ -338,6 +338,7 @@ def test_init_from_url(mock_get):
     mock_get.assert_called_once_with(sample_url)
     assert pattern_set.name == "Alternate PatternSet"
     assert pattern_set.description == "A test pattern set"
+    assert pattern_set.url == sample_url
     assert len(pattern_set._patterns) == 1
     assert "pattern1" in pattern_set._patterns
 

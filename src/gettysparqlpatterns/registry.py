@@ -47,10 +47,14 @@ class SPARQLRegistry:
         return cls._registry
 
     @classmethod
-    def get_patternset(cls, name: str):
+    def get_patternset(cls, name: str | None = None, url: str | None = None):
         p = cls._registry.get(name)
         if p is not None:
             return p
+        elif url is not None:
+            for k, v in cls._registry.items():
+                if v.url == url:
+                    return v
         else:
             raise NoSuchPatternError(f"{name} is not a known patternset.")
 
@@ -203,6 +207,7 @@ class PatternSet:
         self.name = ""
         self.description = ""
         self._patterns = {}
+        self.url = from_url
         self.sparql_client_method = sparql_client_method
 
         if from_url is None and from_builtin is None and from_json is None:
@@ -274,6 +279,7 @@ class PatternSet:
         return {
             "name": self.name,
             "description": self.description,
+            "url": self.url,
             "patterns": [
                 {
                     "name": name,
@@ -310,6 +316,8 @@ class PatternSet:
                         # overwrite data
                         self.name = name
                         self.description = description
+                        if "url" in patterns_data:
+                            self.url = patterns_data["url"]
                         self._load_patterns(patterns, add_to_existing)
                 case [*_]:
                     self._load_patterns(patterns_data, add_to_existing)
@@ -323,14 +331,17 @@ class PatternSet:
     def import_patterns_from_url(self, url: str, add_to_existing: bool = False):
         try:
             patterns_data = requests.get(url).json()
+
             match patterns_data:
                 case {"name": name, "description": description, "patterns": patterns}:
                     if add_to_existing is False:
                         # overwrite data
                         self.name = name
                         self.description = description
+                        self.url = url
                         self._load_patterns(patterns, add_to_existing)
                 case [*_]:
+                    self.url = url
                     self._load_patterns(patterns_data, add_to_existing)
                 case _:
                     raise NoPatternsFoundError(
