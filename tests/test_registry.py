@@ -40,6 +40,15 @@ def test_register(pattern_set):
     assert SPARQLRegistry._registry["TestSet"] == pattern_set
 
 
+def test_get_from_url(pattern_set):
+    test_url = "http://example.org/patternset.json"
+    SPARQLRegistry.register("TestSet", pattern_set)
+    pattern_set.url = test_url
+
+    ps = SPARQLRegistry.get_patternset(url=test_url)
+    assert ps == pattern_set
+
+
 def test_get_patternsets(pattern_set):
     SPARQLRegistry.register("TestSet", pattern_set)
     ps = SPARQLRegistry.get_patternsets()
