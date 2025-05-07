@@ -1,2 +1,2 @@
 requests
-black>=25.1.0
+black==25.*

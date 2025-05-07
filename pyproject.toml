@@ -28,5 +28,5 @@ extend-exclude = '''
 [project]
 name = "gettysparqlpatterns"
 dynamic = ["description", "dependencies", "readme", "keywords", "license", "classifiers", "version"]
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 
