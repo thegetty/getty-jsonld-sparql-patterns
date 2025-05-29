@@ -1,2 +1,2 @@
 requests
-black==25.*
+black>=24
