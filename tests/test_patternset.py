@@ -103,6 +103,8 @@ def test_import_patterns():
             "sparql_pattern": "SELECT * WHERE {} LIMIT $test",
             "stype": "select",
             "default_values": {"test": 1},
+            "framing": {"framing": "another test"},
+            "profile_uri": "urn:foo",
         }
     ]
     ps.import_patterns(patterns)
@@ -112,6 +114,8 @@ def test_import_patterns():
     assert "An imported pattern" in imp_pattern.description
     assert "SELECT * WHERE {} LIMIT $test" in imp_pattern.sparql_pattern.template
     assert "test" in imp_pattern.keyword_parameters
+    assert imp_pattern.framing == {"framing": "another test"}
+    assert imp_pattern.profile_uri == "urn:foo"
     assert imp_pattern.default_values.get("test") == 1
 
     bad_pattern = {}
