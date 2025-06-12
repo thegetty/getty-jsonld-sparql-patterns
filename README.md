@@ -201,7 +201,9 @@ add_pattern(
     description: str | None = None, 
     default_values: dict | None = None, 
     applies_to: list | None = None, 
-    ask_filter: bool | None = None
+    ask_filter: bool | None = None,
+    framing: dict | None = None,
+    profile_uri: str | None = None
     )
 ```
 
@@ -223,6 +225,8 @@ Optional:
 - 'default_values' - a dict of default values to use in the template, if none are provided by the user. For example, the pattern may provide 'LIMIT $LIMIT' to allow for a custom number of rows to be returned. Setting 'default_values' to `{"LIMIT": "10"}` would ensure that it would default to 10 otherwise.
 - 'applies_to' - List of types that the SPARQL filter it targeted for. This is primarily used to help filtering or selecting useful patterns to use, and the PatternSet list/browse functions accept a parameter `by_applies_to` which can be used to show only exact matches.
 - 'ask_filter' - a boolean that indicates whether a SPARQL ASK response was 'successful' or not. This depends on the query and the business logic of the intent, as a 'success' could mean that the ASK is False for a given URI.
+- 'framing' - if the stype shows this is a 'construct' query and will return some form of RDF, the framing parameter can be used to store any framing information required by a library such as PyLD to represent the RDF as JSON-LD.
+- 'profile_uri' - This is used to record if the output of this SPARQL query is intended to conform to any application profile (https://www.w3.org/TR/dx-prof-conneg/)
 
 ### `run_pattern` SPARQL query type responses
 

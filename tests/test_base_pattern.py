@@ -18,6 +18,8 @@ def test_init():
         description="Test pattern",
         default_values={"LIMIT": 10},
         applies_to=["HumanMadeObject"],
+        profile_uri="Test URI",
+        framing={"framing": "test"},
     )
     assert pattern.name == "test"
     assert pattern.description == "Test pattern"
@@ -25,6 +27,8 @@ def test_init():
     assert pattern.stype == "select"
     assert pattern.default_values == {"LIMIT": 10}
     assert pattern.applies_to == ["HumanMadeObject"]
+    assert pattern.profile_uri == "Test URI"
+    assert pattern.framing == {"framing": "test"}
 
 
 # Unit tests

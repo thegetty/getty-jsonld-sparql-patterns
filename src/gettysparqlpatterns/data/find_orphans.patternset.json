@@ -1,0 +1,26 @@
+{
+  "name": "find_orphans",
+  "description": "No description given.",
+  "patterns": [
+    {
+      "name": "find_orphan_agents",
+      "description": "No description given",
+      "sparql_pattern": "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\nPREFIX crm: <http://www.cidoc-crm.org/cidoc-crm/>\nSELECT ?orphan WHERE {\n  GRAPH ?orphan {\n      ?orphan rdf:type crm:E21_Person .\n  }\n  FILTER NOT EXISTS {\n    ?sub ?pred ?orphan .\n  }\n}",
+      "stype": "select",
+      "keyword_parameters": [],
+      "default_values": {},
+      "applies_to": [],
+      "ask_filter": null
+    },
+    {
+      "name": "find_orphan_subjects",
+      "description": "No description given",
+      "sparql_pattern": "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\nPREFIX crm: <http://www.cidoc-crm.org/cidoc-crm/>\nSELECT ?orphan WHERE {\n  GRAPH ?orphan {\n      ?orphan rdf:type crm:E33_Linguistic_Object .\n  }\n  FILTER NOT EXISTS {\n    ?sub ?pred ?orphan .\n  }\n}",
+      "stype": "select",
+      "keyword_parameters": [],
+      "default_values": {},
+      "applies_to": [],
+      "ask_filter": null
+    }
+  ]
+}

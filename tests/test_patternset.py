@@ -40,6 +40,8 @@ def test_add_pattern():
         stype="select",
         description="Test pattern",
         default_values={"LIMIT": 10},
+        framing={"framing": "test"},
+        profile_uri="Test URI",
     )
     assert "test_pattern" in pattern_set._patterns
     pattern = pattern_set.get_pattern("test_pattern")
@@ -48,6 +50,8 @@ def test_add_pattern():
     assert pattern.sparql_pattern.template == "SELECT * WHERE { ?s ?p ?o } LIMIT $LIMIT"
     assert pattern.stype == "select"
     assert pattern.default_values == {"LIMIT": 10}
+    assert pattern.framing == {"framing": "test"}
+    assert pattern.profile_uri == "Test URI"
     assert "LIMIT" in pattern.keyword_parameters
 
 
@@ -99,6 +103,8 @@ def test_import_patterns():
             "sparql_pattern": "SELECT * WHERE {} LIMIT $test",
             "stype": "select",
             "default_values": {"test": 1},
+            "framing": {"framing": "another test"},
+            "profile_uri": "urn:foo",
         }
     ]
     ps.import_patterns(patterns)
@@ -108,6 +114,8 @@ def test_import_patterns():
     assert "An imported pattern" in imp_pattern.description
     assert "SELECT * WHERE {} LIMIT $test" in imp_pattern.sparql_pattern.template
     assert "test" in imp_pattern.keyword_parameters
+    assert imp_pattern.framing == {"framing": "another test"}
+    assert imp_pattern.profile_uri == "urn:foo"
     assert imp_pattern.default_values.get("test") == 1
 
     bad_pattern = {}
