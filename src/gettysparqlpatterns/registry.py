@@ -95,6 +95,8 @@ class BasePattern:
             bool | None
         ) = None,  # if used as a filter, which bool is the default 'allowed' value
         sparql_client_method: Callable[[str], dict | str] = None,
+        framing: dict | None = None,
+        profile_uri: str | None = None,
         **kwargs,
     ):
         self.name = name
@@ -130,6 +132,9 @@ class BasePattern:
             self.ask_filter = True
 
         self.sparql_client_method = sparql_client_method
+
+        self.framing = framing
+        self.profile_uri = profile_uri
 
     def _set_pattern(self, sparql_pattern):
         try:
@@ -247,6 +252,8 @@ class PatternSet:
         default_values: dict | None = None,
         applies_to: list | None = None,
         ask_filter: bool | None = None,
+        framing: dict | None = None,
+        profile_uri: str | None = None,
     ):
         self._patterns[name] = BasePattern(
             name=name,
@@ -256,6 +263,8 @@ class PatternSet:
             sparql_client_method=self.sparql_client_method,
             default_values=default_values,
             ask_filter=ask_filter,
+            framing=framing,
+            profile_uri=profile_uri,
         )
 
     def browse_patterns(self, by_type=None, by_applies_to=None):
@@ -290,6 +299,8 @@ class PatternSet:
                     "default_values": pattern.default_values,
                     "applies_to": pattern.applies_to,
                     "ask_filter": pattern.ask_filter,
+                    "framing": pattern.framing,
+                    "profile_uri": pattern.profile_uri,
                 }
                 for name, pattern in self._patterns.items()
             ],

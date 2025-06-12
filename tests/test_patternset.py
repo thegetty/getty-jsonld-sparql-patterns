@@ -40,6 +40,8 @@ def test_add_pattern():
         stype="select",
         description="Test pattern",
         default_values={"LIMIT": 10},
+        framing={"framing": "test"},
+        profile_uri="Test URI",
     )
     assert "test_pattern" in pattern_set._patterns
     pattern = pattern_set.get_pattern("test_pattern")
