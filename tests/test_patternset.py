@@ -50,6 +50,8 @@ def test_add_pattern():
     assert pattern.sparql_pattern.template == "SELECT * WHERE { ?s ?p ?o } LIMIT $LIMIT"
     assert pattern.stype == "select"
     assert pattern.default_values == {"LIMIT": 10}
+    assert pattern.framing == {"framing": "test"}
+    assert pattern.profile_uri == "Test URI"
     assert "LIMIT" in pattern.keyword_parameters
 
 
