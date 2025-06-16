@@ -10,7 +10,7 @@
       "stype": "construct",
       "keyword_parameters": ["URI"],
       "default_values": {},
-      "applies_to": [],
+      "applies_to": ["InformationObject"],
       "ask_filter": null,
       "framing": null,
       "profile_uri": "urn:getty:dublincore"
