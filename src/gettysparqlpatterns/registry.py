@@ -250,7 +250,7 @@ class PatternSet:
         stype: Literal["ask", "select", "construct", "count"],
         description: str | None = None,
         default_values: dict | None = None,
-        applies_to: list | None = None,
+        applies_to: list | str | None = None,
         ask_filter: bool | None = None,
         framing: dict | None = None,
         profile_uri: str | None = None,
@@ -264,6 +264,7 @@ class PatternSet:
             default_values=default_values,
             ask_filter=ask_filter,
             framing=framing,
+            applies_to=applies_to,
             profile_uri=profile_uri,
         )
 
